@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Template, TextElement, ShapeElement, ImageElement } from '../../types'
+import type { Template, TextElement, ShapeElement, ImageElement, PathElement } from '../../types'
+import { shapeFillCss } from '../../utils/style'
+import { pointsToD } from '../../utils/path'
 
 interface Props {
   template: Template
@@ -23,7 +25,9 @@ export default function TemplatePreview({ template, className = '' }: Props) {
     return () => ro.disconnect()
   }, [template.canvasWidth])
 
-  const sorted = [...template.elements].sort((a, b) => a.zIndex - b.zIndex)
+  const sorted = [...template.elements]
+    .sort((a, b) => a.zIndex - b.zIndex)
+    .filter((el) => el.visible !== false)
 
   return (
     <div
@@ -68,6 +72,7 @@ export default function TemplatePreview({ template, className = '' }: Props) {
                   color: t.color,
                   backgroundColor: t.backgroundColor,
                   lineHeight: t.lineHeight,
+                  letterSpacing: t.letterSpacing != null ? `${t.letterSpacing}px` : undefined,
                   padding: t.padding,
                   overflow: 'hidden',
                   whiteSpace: 'pre-wrap',
@@ -81,21 +86,80 @@ export default function TemplatePreview({ template, className = '' }: Props) {
           }
           if (el.type === 'shape') {
             const s = el as ShapeElement
+            if (s.shape === 'line' || s.shape === 'arrow') {
+              const stroke = s.stroke && s.stroke !== 'transparent' ? s.stroke : s.fill
+              const sw = Math.max(1, s.strokeWidth || 2)
+              return (
+                <svg
+                  key={el.id}
+                  style={{ ...baseStyle, overflow: 'visible' }}
+                  viewBox={`0 0 ${s.size.width} ${s.size.height}`}
+                  preserveAspectRatio="none"
+                >
+                  <line
+                    x1={sw / 2}
+                    y1={s.size.height / 2}
+                    x2={s.size.width - sw / 2}
+                    y2={s.size.height / 2}
+                    stroke={stroke}
+                    strokeWidth={sw}
+                    strokeLinecap="round"
+                  />
+                </svg>
+              )
+            }
+            const fillStyle = shapeFillCss(s)
+            let clipPath: string | undefined
+            let radius: number | string | undefined = s.borderRadius
+            if (s.shape === 'circle') radius = '50%'
+            else if (s.shape === 'triangle') {
+              clipPath = 'polygon(50% 0%, 0% 100%, 100% 100%)'
+              radius = 0
+            } else if (s.shape === 'star') {
+              clipPath =
+                'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'
+              radius = 0
+            }
             return (
               <div
                 key={el.id}
                 style={{
                   ...baseStyle,
-                  backgroundColor: s.fill,
-                  border: s.strokeWidth > 0 ? `${s.strokeWidth}px solid ${s.stroke}` : undefined,
-                  borderRadius: s.shape === 'circle' ? '50%' : s.borderRadius,
+                  ...fillStyle,
+                  border:
+                    !clipPath && s.strokeWidth > 0
+                      ? `${s.strokeWidth}px solid ${s.stroke}`
+                      : undefined,
+                  borderRadius: radius,
+                  clipPath,
                   boxSizing: 'border-box',
                 }}
               />
             )
           }
+          if (el.type === 'path') {
+            const p = el as PathElement
+            return (
+              <svg
+                key={el.id}
+                style={{ ...baseStyle, overflow: 'visible' }}
+                viewBox={`0 0 ${p.size.width} ${p.size.height}`}
+                preserveAspectRatio="none"
+              >
+                <path
+                  d={pointsToD(p.points, p.mode, p.closed)}
+                  fill={p.closed ? p.stroke : 'none'}
+                  fillOpacity={p.closed ? 0.1 : 0}
+                  stroke={p.stroke}
+                  strokeWidth={p.strokeWidth}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            )
+          }
           const img = el as ImageElement
-          if (!img.src) return null
+          if (!img.src || img.src.startsWith('{{')) return null
           return (
             <img
               key={el.id}

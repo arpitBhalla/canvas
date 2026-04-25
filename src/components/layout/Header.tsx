@@ -13,11 +13,17 @@ import {
   FileText,
   Loader2,
   ArrowLeft,
+  Images,
+  Pencil,
+  Spline,
+  Minus,
 } from 'lucide-react'
+import type { PathMode } from '../../types'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useEditorStore } from '../../store/editorStore'
 import { useProjectsStore } from '../../store/projectsStore'
 import { generatePDF } from '../../utils/pdf'
+import { exportRecordsAsZip } from '../../utils/imageExport'
 import type { ShapeElement } from '../../types'
 
 const MAX_IMAGE_PIXELS = 1600
@@ -57,6 +63,33 @@ function ToolButton({
   )
 }
 
+function PenButton({
+  mode,
+  current,
+  setMode,
+  title,
+  children,
+}: {
+  mode: PathMode
+  current: PathMode | null
+  setMode: (mode: PathMode | null) => void
+  title: string
+  children: React.ReactNode
+}) {
+  const active = current === mode
+  return (
+    <button
+      onClick={() => setMode(active ? null : mode)}
+      title={title}
+      className={`flex items-center justify-center h-8 w-8 rounded-md transition-colors ${
+        active ? 'bg-violet-600 text-white' : 'text-gray-700 hover:bg-gray-100'
+      }`}
+    >
+      {children}
+    </button>
+  )
+}
+
 function IconButton({
   onClick,
   title,
@@ -86,8 +119,11 @@ export default function Header() {
   const zoom = useEditorStore((s) => s.zoom)
   const setZoom = useEditorStore((s) => s.setZoom)
   const templateName = useEditorStore((s) => s.template.name)
+  const drawingMode = useEditorStore((s) => s.drawingMode)
+  const setDrawingMode = useEditorStore((s) => s.setDrawingMode)
   const renameProject = useProjectsStore((s) => s.renameProject)
   const [exportingPdf, setExportingPdf] = useState(false)
+  const [exportingZip, setExportingZip] = useState<{ current: number; total: number } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   async function handleExportPDF() {
@@ -99,6 +135,20 @@ export default function Header() {
       await generatePDF(template, ds.records)
     } finally {
       setExportingPdf(false)
+    }
+  }
+
+  async function handleExportZip() {
+    const { template } = useEditorStore.getState()
+    const ds = useEditorStore.getState().dataSource
+    if (!ds) return
+    setExportingZip({ current: 0, total: ds.records.length })
+    try {
+      await exportRecordsAsZip(template, ds.records, {
+        onProgress: (current, total) => setExportingZip({ current, total }),
+      })
+    } finally {
+      setExportingZip(null)
     }
   }
 
@@ -198,6 +248,18 @@ export default function Header() {
         />
       </div>
 
+      <div className="flex items-center gap-0.5 p-0.5 bg-gray-50 rounded-lg border border-gray-200/70">
+        <PenButton mode="straight" current={drawingMode} setMode={setDrawingMode} title="Straight line">
+          <Minus size={16} />
+        </PenButton>
+        <PenButton mode="curve" current={drawingMode} setMode={setDrawingMode} title="Curve">
+          <Spline size={16} />
+        </PenButton>
+        <PenButton mode="freehand" current={drawingMode} setMode={setDrawingMode} title="Freehand">
+          <Pencil size={16} />
+        </PenButton>
+      </div>
+
       <div className="flex items-center gap-0.5">
         <IconButton onClick={() => useEditorStore.temporal.getState().undo()} title="Undo (Cmd+Z)">
           <Undo2 size={16} />
@@ -250,6 +312,15 @@ export default function Header() {
       >
         <Eye size={16} />
         Preview
+      </button>
+      <button
+        onClick={handleExportZip}
+        disabled={!dataSource || exportingZip !== null}
+        className="flex items-center gap-1.5 h-8 px-3 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        title={dataSource ? 'Export every record as PNG (ZIP)' : 'Upload data first'}
+      >
+        {exportingZip ? <Loader2 size={16} className="animate-spin" /> : <Images size={16} />}
+        {exportingZip ? `${exportingZip.current}/${exportingZip.total}` : 'PNG zip'}
       </button>
       <button
         onClick={handleExportPDF}

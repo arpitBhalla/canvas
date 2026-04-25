@@ -2,19 +2,20 @@ import { useEditorStore } from '../../store/editorStore'
 import type { TextElement } from '../../types'
 
 export default function VariableList() {
-  const selectedElementId = useEditorStore((s) => s.selectedElementId)
+  const selectedElementIds = useEditorStore((s) => s.selectedElementIds)
+  const singleSelectedId = selectedElementIds.length === 1 ? selectedElementIds[0] : null
   const editingTextId = useEditorStore((s) => s.editingTextId)
   const elements = useEditorStore((s) => s.template.elements)
   const updateElement = useEditorStore((s) => s.updateElement)
   const dataSource = useEditorStore((s) => s.dataSource)
 
-  const selectedElement = elements.find((e) => e.id === selectedElementId)
+  const selectedElement = elements.find((e) => e.id === singleSelectedId)
   const isTextSelected = selectedElement?.type === 'text'
 
   const variables = dataSource?.headers ?? []
 
   function insertVariable(variableName: string) {
-    const targetId = editingTextId ?? selectedElementId
+    const targetId = editingTextId ?? singleSelectedId
     if (!targetId) return
 
     const el = elements.find((e) => e.id === targetId)

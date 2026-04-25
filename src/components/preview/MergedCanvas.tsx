@@ -1,6 +1,8 @@
 import { useEditorStore } from '../../store/editorStore'
-import { replaceVariables } from '../../utils/variables'
-import type { TextElement, ShapeElement, ImageElement } from '../../types'
+import { replaceVariables, shouldHideForRecord, isVariableToken, variableTokenName } from '../../utils/variables'
+import { shadowToCss, imageFiltersToCss, shapeFillCss } from '../../utils/style'
+import { pointsToD } from '../../utils/path'
+import type { TextElement, ShapeElement, ImageElement, PathElement } from '../../types'
 
 interface Props {
   data: Record<string, string>
@@ -9,7 +11,9 @@ interface Props {
 export default function MergedCanvas({ data }: Props) {
   const template = useEditorStore((s) => s.template)
 
-  const sorted = [...template.elements].sort((a, b) => a.zIndex - b.zIndex)
+  const sorted = [...template.elements]
+    .sort((a, b) => a.zIndex - b.zIndex)
+    .filter((el) => el.visible !== false && !shouldHideForRecord(el.hideWhenEmpty, data))
 
   return (
     <div
@@ -47,7 +51,9 @@ export default function MergedCanvas({ data }: Props) {
                 color: t.color,
                 backgroundColor: t.backgroundColor,
                 lineHeight: t.lineHeight,
+                letterSpacing: t.letterSpacing != null ? `${t.letterSpacing}px` : undefined,
                 padding: t.padding,
+                textShadow: shadowToCss(t.shadow),
                 overflow: 'hidden',
                 wordBreak: 'break-word',
                 whiteSpace: 'pre-wrap',
@@ -60,14 +66,76 @@ export default function MergedCanvas({ data }: Props) {
 
         if (el.type === 'shape') {
           const s = el as ShapeElement
+          if (s.shape === 'line' || s.shape === 'arrow') {
+            const stroke = s.stroke && s.stroke !== 'transparent' ? s.stroke : s.fill
+            const sw = Math.max(1, s.strokeWidth || 2)
+            const markerId = `m-${s.id}`
+            return (
+              <svg
+                key={el.id}
+                style={{
+                  ...baseStyle,
+                  overflow: 'visible',
+                  filter: shadowToCss(s.shadow) ? `drop-shadow(${shadowToCss(s.shadow)})` : undefined,
+                }}
+                viewBox={`0 0 ${s.size.width} ${s.size.height}`}
+                preserveAspectRatio="none"
+              >
+                {s.shape === 'arrow' && (
+                  <defs>
+                    <marker
+                      id={markerId}
+                      viewBox="0 0 10 10"
+                      refX="8"
+                      refY="5"
+                      markerUnits="strokeWidth"
+                      markerWidth="5"
+                      markerHeight="5"
+                      orient="auto-start-reverse"
+                    >
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill={stroke} />
+                    </marker>
+                  </defs>
+                )}
+                <line
+                  x1={sw / 2}
+                  y1={s.size.height / 2}
+                  x2={s.size.width - sw / 2}
+                  y2={s.size.height / 2}
+                  stroke={stroke}
+                  strokeWidth={sw}
+                  strokeLinecap="round"
+                  markerEnd={s.shape === 'arrow' ? `url(#${markerId})` : undefined}
+                />
+              </svg>
+            )
+          }
+          const fillStyle = shapeFillCss(s)
+          let clipPath: string | undefined
+          let radius: number | string | undefined = s.borderRadius
+          if (s.shape === 'circle') radius = '50%'
+          else if (s.shape === 'triangle') {
+            clipPath = 'polygon(50% 0%, 0% 100%, 100% 100%)'
+            radius = 0
+          } else if (s.shape === 'star') {
+            clipPath =
+              'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'
+            radius = 0
+          }
+          const usesClip = !!clipPath
+          const shadow = shadowToCss(s.shadow)
           return (
             <div
               key={el.id}
               style={{
                 ...baseStyle,
-                backgroundColor: s.fill,
-                border: s.strokeWidth > 0 ? `${s.strokeWidth}px solid ${s.stroke}` : 'none',
-                borderRadius: s.shape === 'circle' ? '50%' : s.borderRadius,
+                ...fillStyle,
+                border:
+                  !usesClip && s.strokeWidth > 0 ? `${s.strokeWidth}px solid ${s.stroke}` : 'none',
+                borderRadius: radius,
+                clipPath,
+                boxShadow: !usesClip ? shadow : undefined,
+                filter: usesClip && shadow ? `drop-shadow(${shadow})` : undefined,
               }}
             />
           )
@@ -75,15 +143,24 @@ export default function MergedCanvas({ data }: Props) {
 
         if (el.type === 'image') {
           const img = el as ImageElement
-          return img.src ? (
+          let src = img.src
+          if (isVariableToken(src)) {
+            const name = variableTokenName(src)
+            src = name ? data[name] ?? '' : ''
+          }
+          const shadow = shadowToCss(img.shadow)
+          const filterCss = imageFiltersToCss(img.filters)
+          const combinedFilter = [filterCss, shadow ? `drop-shadow(${shadow})` : null].filter(Boolean).join(' ')
+          return src ? (
             <img
               key={el.id}
-              src={img.src}
+              src={src}
               alt=""
               style={{
                 ...baseStyle,
                 objectFit: img.objectFit,
                 borderRadius: img.borderRadius,
+                filter: combinedFilter || undefined,
               }}
             />
           ) : (
@@ -94,6 +171,57 @@ export default function MergedCanvas({ data }: Props) {
             >
               No image
             </div>
+          )
+        }
+
+        if (el.type === 'path') {
+          const p = el as PathElement
+          const shadow = shadowToCss(p.shadow)
+          const showArrow = p.arrowhead && p.arrowhead !== 'none'
+          const markerId = `pm-${p.id}`
+          return (
+            <svg
+              key={el.id}
+              style={{
+                ...baseStyle,
+                overflow: 'visible',
+                filter: shadow ? `drop-shadow(${shadow})` : undefined,
+              }}
+              viewBox={`0 0 ${p.size.width} ${p.size.height}`}
+              preserveAspectRatio="none"
+            >
+              {showArrow && (
+                <defs>
+                  <marker
+                    id={markerId}
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerUnits="strokeWidth"
+                    markerWidth="4"
+                    markerHeight="4"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill={p.stroke} />
+                  </marker>
+                </defs>
+              )}
+              <path
+                d={pointsToD(p.points, p.mode, p.closed)}
+                fill={p.closed ? p.stroke : 'none'}
+                fillOpacity={p.closed ? 0.1 : 0}
+                stroke={p.stroke}
+                strokeWidth={p.strokeWidth}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                markerEnd={
+                  showArrow && (p.arrowhead === 'end' || p.arrowhead === 'both')
+                    ? `url(#${markerId})`
+                    : undefined
+                }
+                markerStart={showArrow && p.arrowhead === 'both' ? `url(#${markerId})` : undefined}
+              />
+            </svg>
           )
         }
 

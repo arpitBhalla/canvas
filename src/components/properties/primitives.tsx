@@ -1,4 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
+import { Plus, X } from 'lucide-react'
+import { useEditorStore } from '../../store/editorStore'
+
+const EMPTY_COLORS: string[] = []
 
 interface FieldProps {
   label: string
@@ -107,6 +111,9 @@ export function ColorField({ label, value, onChange, allowTransparent }: ColorFi
   const [open, setOpen] = useState(false)
   const [hex, setHex] = useState(isTransparent ? '' : value)
   const ref = useRef<HTMLDivElement>(null)
+  const brandColors = useEditorStore((s) => s.template.brandColors) ?? EMPTY_COLORS
+  const addBrandColor = useEditorStore((s) => s.addBrandColor)
+  const removeBrandColor = useEditorStore((s) => s.removeBrandColor)
 
   useEffect(() => {
     setHex(isTransparent ? '' : value)
@@ -182,6 +189,49 @@ export function ColorField({ label, value, onChange, allowTransparent }: ColorFi
                 {isTransparent ? '✓ Transparent' : 'Set transparent'}
               </button>
             )}
+
+            <div className="pt-2 border-t border-gray-100">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+                  Brand colors
+                </span>
+                {!isTransparent && (
+                  <button
+                    onClick={() => addBrandColor(value)}
+                    className="text-[10px] text-violet-600 hover:text-violet-800 flex items-center gap-0.5"
+                    title="Save current color"
+                  >
+                    <Plus size={10} /> Save
+                  </button>
+                )}
+              </div>
+              {brandColors.length === 0 ? (
+                <div className="text-[10px] text-gray-400 italic">No saved colors yet.</div>
+              ) : (
+                <div className="grid grid-cols-8 gap-1">
+                  {brandColors.map((c) => (
+                    <div key={c} className="relative group">
+                      <button
+                        onClick={() => onChange(c)}
+                        title={c}
+                        className="w-full aspect-square rounded border border-black/10 hover:ring-2 hover:ring-violet-300 transition-all"
+                        style={{ backgroundColor: c }}
+                      />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          removeBrandColor(c)
+                        }}
+                        className="absolute -top-1 -right-1 w-3 h-3 bg-gray-700 hover:bg-red-600 text-white rounded-full hidden group-hover:flex items-center justify-center"
+                        title="Remove"
+                      >
+                        <X size={8} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

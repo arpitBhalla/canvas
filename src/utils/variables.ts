@@ -31,3 +31,22 @@ export function extractVariables(content: string): string[] {
 export function replaceVariables(content: string, data: Record<string, string>): string {
   return content.replace(VARIABLE_REGEX, (_, name: string) => data[name] ?? `{{${name}}}`)
 }
+
+export function isVariableToken(value: string): boolean {
+  const match = value.trim().match(/^\{\{(\w+)\}\}$/)
+  return match !== null
+}
+
+export function variableTokenName(value: string): string | null {
+  const match = value.trim().match(/^\{\{(\w+)\}\}$/)
+  return match ? match[1]! : null
+}
+
+export function shouldHideForRecord(
+  hideWhenEmpty: string | undefined,
+  data: Record<string, string>
+): boolean {
+  if (!hideWhenEmpty) return false
+  const value = data[hideWhenEmpty]
+  return value === undefined || value === null || String(value).trim() === ''
+}

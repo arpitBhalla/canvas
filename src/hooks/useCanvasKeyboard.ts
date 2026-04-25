@@ -2,45 +2,32 @@ import { useEffect } from 'react'
 import { useEditorStore } from '../store/editorStore'
 
 export function useCanvasKeyboard() {
-  const deleteElement = useEditorStore((s) => s.deleteElement)
-  const duplicateElement = useEditorStore((s) => s.duplicateElement)
-  const moveElement = useEditorStore((s) => s.moveElement)
-  const selectElement = useEditorStore((s) => s.selectElement)
+  const deleteSelected = useEditorStore((s) => s.deleteSelected)
+  const duplicateSelected = useEditorStore((s) => s.duplicateSelected)
+  const moveSelectedBy = useEditorStore((s) => s.moveSelectedBy)
+  const clearSelection = useEditorStore((s) => s.clearSelection)
+  const selectMany = useEditorStore((s) => s.selectMany)
   const togglePreview = useEditorStore((s) => s.togglePreview)
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       const state = useEditorStore.getState()
-      const { selectedElementId, editingTextId, previewOpen } = state
+      const { selectedElementIds, editingTextId, previewOpen } = state
 
-      // Don't capture keys when editing text
       if (editingTextId) return
-
-      if (e.key === 'Escape') {
-        if (previewOpen) {
-          togglePreview()
-        } else {
-          selectElement(null)
-        }
-        return
-      }
-
-      if (!selectedElementId) return
-
-      const el = state.template.elements.find((e) => e.id === selectedElementId)
-      if (!el) return
 
       const mod = e.metaKey || e.ctrlKey
 
-      if ((e.key === 'Delete' || e.key === 'Backspace') && !mod) {
-        e.preventDefault()
-        deleteElement(selectedElementId)
+      if (e.key === 'Escape') {
+        if (previewOpen) togglePreview()
+        else clearSelection()
         return
       }
 
-      if (e.key === 'd' && mod) {
+      if (e.key === 'a' && mod) {
         e.preventDefault()
-        duplicateElement(selectedElementId)
+        const ids = state.template.elements.map((el) => el.id)
+        selectMany(ids)
         return
       }
 
@@ -56,23 +43,37 @@ export function useCanvasKeyboard() {
         return
       }
 
+      if (selectedElementIds.length === 0) return
+
+      if ((e.key === 'Delete' || e.key === 'Backspace') && !mod) {
+        e.preventDefault()
+        deleteSelected()
+        return
+      }
+
+      if (e.key === 'd' && mod) {
+        e.preventDefault()
+        duplicateSelected()
+        return
+      }
+
       const nudge = e.shiftKey ? 10 : 1
       if (e.key === 'ArrowUp') {
         e.preventDefault()
-        moveElement(selectedElementId, { x: el.position.x, y: el.position.y - nudge })
+        moveSelectedBy(0, -nudge)
       } else if (e.key === 'ArrowDown') {
         e.preventDefault()
-        moveElement(selectedElementId, { x: el.position.x, y: el.position.y + nudge })
+        moveSelectedBy(0, nudge)
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault()
-        moveElement(selectedElementId, { x: el.position.x - nudge, y: el.position.y })
+        moveSelectedBy(-nudge, 0)
       } else if (e.key === 'ArrowRight') {
         e.preventDefault()
-        moveElement(selectedElementId, { x: el.position.x + nudge, y: el.position.y })
+        moveSelectedBy(nudge, 0)
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [deleteElement, duplicateElement, moveElement, selectElement, togglePreview])
+  }, [deleteSelected, duplicateSelected, moveSelectedBy, clearSelection, selectMany, togglePreview])
 }

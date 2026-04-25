@@ -1,4 +1,4 @@
-import { Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight } from 'lucide-react'
+import { Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight } from 'lucide-react'
 import { useEditorStore } from '../../store/editorStore'
 import type { TextElement } from '../../types'
 import FontPicker from './FontPicker'
@@ -70,8 +70,29 @@ export default function TextProperties({ element }: Props) {
           >
             <Underline size={14} />
           </StyleToggle>
+          <StyleToggle
+            active={element.textDecoration === 'line-through'}
+            onClick={() =>
+              update({
+                textDecoration: element.textDecoration === 'line-through' ? 'none' : 'line-through',
+              })
+            }
+            label="Strikethrough"
+          >
+            <Strikethrough size={14} />
+          </StyleToggle>
         </div>
       </Field>
+
+      <Slider
+        label="Letter spacing"
+        value={element.letterSpacing ?? 0}
+        onChange={(letterSpacing) => update({ letterSpacing })}
+        min={-5}
+        max={20}
+        step={0.5}
+        format={(v) => `${v} px`}
+      />
 
       <SegmentedControl
         label="Alignment"

@@ -2,6 +2,7 @@ import { useRef, useCallback, useEffect } from 'react'
 import { useEditorStore } from '../../store/editorStore'
 import type { TextElement as TextElementType } from '../../types'
 import { parseContentToSegments } from '../../utils/variables'
+import { shadowToCss } from '../../utils/style'
 
 interface Props {
   element: TextElementType
@@ -56,7 +57,9 @@ export default function TextElement({ element }: Props) {
     color: element.color,
     backgroundColor: element.backgroundColor,
     lineHeight: element.lineHeight,
+    letterSpacing: element.letterSpacing != null ? `${element.letterSpacing}px` : undefined,
     padding: element.padding,
+    textShadow: shadowToCss(element.shadow),
     outline: 'none',
     overflow: 'hidden',
     wordBreak: 'break-word',

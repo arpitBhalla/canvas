@@ -1,13 +1,15 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import Header from '../components/layout/Header'
 import LeftSidebar from '../components/layout/LeftSidebar'
 import RightSidebar from '../components/layout/RightSidebar'
 import Canvas from '../components/canvas/Canvas'
 import PreviewModal from '../components/preview/PreviewModal'
+import CommandPalette from '../components/CommandPalette'
 import { useEditorStore } from '../store/editorStore'
 import { useProjectsStore } from '../store/projectsStore'
 import { useCanvasKeyboard } from '../hooks/useCanvasKeyboard'
+import { useClipboardPaste } from '../hooks/useClipboardPaste'
 import { loadFontsForTemplate } from '../utils/fonts'
 
 const SAVE_DEBOUNCE_MS = 500
@@ -19,8 +21,10 @@ export default function ProjectEditor() {
   const previewOpen = useEditorStore((s) => s.previewOpen)
   const loadProject = useEditorStore((s) => s.loadProject)
   const hydratedFor = useRef<string | null>(null)
+  const [paletteOpen, setPaletteOpen] = useState(false)
 
   useCanvasKeyboard()
+  useClipboardPaste()
 
   useEffect(() => {
     if (!project || hydratedFor.current === project.id) return
@@ -46,6 +50,18 @@ export default function ProjectEditor() {
     }
   }, [id, upsertTemplate])
 
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const mod = e.metaKey || e.ctrlKey
+      if (mod && e.key === 'k') {
+        e.preventDefault()
+        setPaletteOpen((v) => !v)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   if (!id) return <Navigate to="/" replace />
   if (!project) return <Navigate to="/" replace />
 
@@ -58,6 +74,7 @@ export default function ProjectEditor() {
         <RightSidebar />
       </div>
       {previewOpen && <PreviewModal />}
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
     </div>
   )
 }
