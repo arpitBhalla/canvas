@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Canvas Studio">
+  <defs>
+    <linearGradient id="cs-back" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#6d28d9"/>
+    </linearGradient>
+    <linearGradient id="cs-front" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fb923c"/>
+      <stop offset="55%" stop-color="#ec4899"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+    <linearGradient id="cs-shine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.35"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="cs-clip">
+      <rect width="32" height="32" rx="7.5" ry="7.5"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#cs-clip)">
+    <rect width="32" height="32" fill="url(#cs-back)"/>
+    <path d="M 32 6.5 L 32 32 L 5.5 32 Z" fill="url(#cs-front)"/>
+    <path d="M 5.5 32 L 32 6.5" stroke="#ffffff" stroke-opacity="0.55" stroke-width="0.6" stroke-linecap="round"/>
+    <circle cx="9" cy="9" r="2.4" fill="#ffffff" fill-opacity="0.95"/>
+    <rect width="32" height="32" fill="url(#cs-shine)"/>
+  </g>
+</svg>

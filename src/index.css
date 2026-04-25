@@ -5,9 +5,86 @@
 body {
   margin: 0;
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: rgb(17 24 39);
 }
 
 #root {
   height: 100vh;
   width: 100vw;
+}
+
+.canvas-dot-bg {
+  background-color: #f4f4f5;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.06) 1px, transparent 0);
+  background-size: 16px 16px;
+}
+
+.scroll-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+}
+.scroll-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.22);
+}
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+input[type='range'].slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: rgb(229 231 235);
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+input[type='range'].slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: linear-gradient(to right, rgb(124 58 237) 0%, rgb(124 58 237) var(--fill, 0%), rgb(229 231 235) var(--fill, 0%), rgb(229 231 235) 100%);
+}
+input[type='range'].slider::-moz-range-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: rgb(229 231 235);
+}
+input[type='range'].slider::-moz-range-progress {
+  height: 4px;
+  border-radius: 9999px;
+  background: rgb(124 58 237);
+}
+input[type='range'].slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border-radius: 9999px;
+  background: white;
+  border: 2px solid rgb(124 58 237);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+input[type='range'].slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+input[type='range'].slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: white;
+  border: 2px solid rgb(124 58 237);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
 }

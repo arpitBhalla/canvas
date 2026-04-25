@@ -1,6 +1,8 @@
 import { useRef } from 'react'
+import { Upload } from 'lucide-react'
 import { useEditorStore } from '../../store/editorStore'
 import type { ImageElement } from '../../types'
+import { Field, Slider, SegmentedControl } from './primitives'
 
 interface Props {
   element: ImageElement
@@ -17,79 +19,63 @@ export default function ImageProperties({ element }: Props) {
   function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-
     const reader = new FileReader()
-    reader.onload = () => {
-      update({ src: reader.result as string })
-    }
+    reader.onload = () => update({ src: reader.result as string })
     reader.readAsDataURL(file)
   }
 
   return (
     <>
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">Image Source</label>
+      <Field label="Source">
         <input ref={fileRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
         <button
           onClick={() => fileRef.current?.click()}
-          className="w-full py-2 text-sm border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+          className="w-full h-8 flex items-center justify-center gap-1.5 text-xs font-medium border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
         >
-          Upload Image
+          <Upload size={13} />
+          {element.src ? 'Replace image' : 'Upload image'}
         </button>
-      </div>
+      </Field>
 
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">Or paste URL</label>
+      <Field label="Or paste URL">
         <input
           type="text"
           value={element.src.startsWith('data:') ? '' : element.src}
           onChange={(e) => update({ src: e.target.value })}
-          placeholder="https://..."
-          className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm"
+          placeholder="https://…"
+          className="w-full h-8 border border-gray-200 rounded-md px-2 text-xs focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20"
         />
-      </div>
+      </Field>
 
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">Object Fit</label>
-        <div className="grid grid-cols-3 gap-1">
-          {(['cover', 'contain', 'fill'] as const).map((fit) => (
-            <button
-              key={fit}
-              onClick={() => update({ objectFit: fit })}
-              className={`py-1.5 text-sm rounded border capitalize transition-colors ${
-                element.objectFit === fit ? 'bg-gray-200 border-gray-300' : 'border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              {fit}
-            </button>
-          ))}
-        </div>
-      </div>
+      <SegmentedControl
+        label="Object fit"
+        value={element.objectFit}
+        onChange={(objectFit) => update({ objectFit })}
+        options={[
+          { value: 'cover', label: 'Cover' },
+          { value: 'contain', label: 'Contain' },
+          { value: 'fill', label: 'Fill' },
+        ]}
+      />
 
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">Border Radius</label>
-        <input
-          type="range"
-          value={element.borderRadius}
-          onChange={(e) => update({ borderRadius: Number(e.target.value) })}
-          min={0}
-          max={100}
-          className="w-full"
-        />
-      </div>
+      <Slider
+        label="Border radius"
+        value={element.borderRadius}
+        onChange={(borderRadius) => update({ borderRadius })}
+        min={0}
+        max={100}
+        format={(v) => `${v} px`}
+      />
 
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">Opacity</label>
-        <input
-          type="range"
-          value={element.opacity}
-          onChange={(e) => update({ opacity: Number(e.target.value) })}
-          min={0}
-          max={1}
-          step={0.05}
-          className="w-full"
-        />
-      </div>
+      <Slider
+        label="Opacity"
+        value={element.opacity}
+        onChange={(opacity) => update({ opacity })}
+        min={0}
+        max={1}
+        step={0.05}
+        format={(v) => `${Math.round(v * 100)}%`}
+      />
     </>
   )
 }

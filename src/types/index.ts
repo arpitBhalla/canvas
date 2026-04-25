@@ -77,8 +77,12 @@ export interface Variable {
 }
 
 export interface DataSource {
-  type: 'csv' | 'json'
+  type: 'csv' | 'json' | 'api'
   records: Record<string, string>[]
   headers: string[]
   fileName?: string
+  apiConfig?: {
+    url: string
+    path?: string
+  }
 }

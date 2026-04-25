@@ -1,6 +1,8 @@
+import { Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight } from 'lucide-react'
 import { useEditorStore } from '../../store/editorStore'
 import type { TextElement } from '../../types'
 import FontPicker from './FontPicker'
+import { Field, Slider, SegmentedControl, ColorField } from './primitives'
 
 interface Props {
   element: TextElement
@@ -15,28 +17,22 @@ export default function TextProperties({ element }: Props) {
 
   return (
     <>
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">Font Family</label>
-        <FontPicker
-          value={element.fontFamily}
-          onChange={(fontFamily) => update({ fontFamily })}
-        />
-      </div>
+      <Field label="Font family">
+        <FontPicker value={element.fontFamily} onChange={(fontFamily) => update({ fontFamily })} />
+      </Field>
 
       <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Size</label>
+        <Field label="Size" hint="px">
           <input
             type="number"
             value={element.fontSize}
             onChange={(e) => update({ fontSize: Number(e.target.value) })}
             min={8}
             max={200}
-            className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm"
+            className="w-full h-8 border border-gray-200 rounded-md px-2 text-sm focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20"
           />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Line Height</label>
+        </Field>
+        <Field label="Line height">
           <input
             type="number"
             value={element.lineHeight}
@@ -44,109 +40,105 @@ export default function TextProperties({ element }: Props) {
             min={0.5}
             max={3}
             step={0.1}
-            className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm"
+            className="w-full h-8 border border-gray-200 rounded-md px-2 text-sm focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20"
           />
-        </div>
+        </Field>
       </div>
 
-      <div className="grid grid-cols-3 gap-1">
-        <button
-          onClick={() => update({ fontWeight: element.fontWeight === 'bold' ? 'normal' : 'bold' })}
-          className={`py-1.5 text-sm rounded border transition-colors ${
-            element.fontWeight === 'bold' ? 'bg-gray-200 border-gray-300 font-bold' : 'border-gray-200 hover:bg-gray-50'
-          }`}
-        >
-          B
-        </button>
-        <button
-          onClick={() => update({ fontStyle: element.fontStyle === 'italic' ? 'normal' : 'italic' })}
-          className={`py-1.5 text-sm rounded border transition-colors italic ${
-            element.fontStyle === 'italic' ? 'bg-gray-200 border-gray-300' : 'border-gray-200 hover:bg-gray-50'
-          }`}
-        >
-          I
-        </button>
-        <button
-          onClick={() => update({ textDecoration: element.textDecoration === 'underline' ? 'none' : 'underline' })}
-          className={`py-1.5 text-sm rounded border transition-colors underline ${
-            element.textDecoration === 'underline' ? 'bg-gray-200 border-gray-300' : 'border-gray-200 hover:bg-gray-50'
-          }`}
-        >
-          U
-        </button>
-      </div>
-
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">Alignment</label>
-        <div className="grid grid-cols-3 gap-1">
-          {(['left', 'center', 'right'] as const).map((align) => (
-            <button
-              key={align}
-              onClick={() => update({ textAlign: align })}
-              className={`py-1.5 text-sm rounded border capitalize transition-colors ${
-                element.textAlign === align ? 'bg-gray-200 border-gray-300' : 'border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              {align}
-            </button>
-          ))}
+      <Field label="Style">
+        <div className="flex gap-1">
+          <StyleToggle
+            active={element.fontWeight === 'bold'}
+            onClick={() => update({ fontWeight: element.fontWeight === 'bold' ? 'normal' : 'bold' })}
+            label="Bold"
+          >
+            <Bold size={14} />
+          </StyleToggle>
+          <StyleToggle
+            active={element.fontStyle === 'italic'}
+            onClick={() => update({ fontStyle: element.fontStyle === 'italic' ? 'normal' : 'italic' })}
+            label="Italic"
+          >
+            <Italic size={14} />
+          </StyleToggle>
+          <StyleToggle
+            active={element.textDecoration === 'underline'}
+            onClick={() =>
+              update({ textDecoration: element.textDecoration === 'underline' ? 'none' : 'underline' })
+            }
+            label="Underline"
+          >
+            <Underline size={14} />
+          </StyleToggle>
         </div>
-      </div>
+      </Field>
+
+      <SegmentedControl
+        label="Alignment"
+        value={element.textAlign}
+        onChange={(textAlign) => update({ textAlign })}
+        options={[
+          { value: 'left', label: '', icon: <AlignLeft size={14} /> },
+          { value: 'center', label: '', icon: <AlignCenter size={14} /> },
+          { value: 'right', label: '', icon: <AlignRight size={14} /> },
+        ]}
+      />
 
       <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Color</label>
-          <input
-            type="color"
-            value={element.color}
-            onChange={(e) => update({ color: e.target.value })}
-            className="w-full h-8 border border-gray-200 rounded cursor-pointer"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Background</label>
-          <div className="flex gap-1">
-            <input
-              type="color"
-              value={element.backgroundColor === 'transparent' ? '#ffffff' : element.backgroundColor}
-              onChange={(e) => update({ backgroundColor: e.target.value })}
-              className="flex-1 h-8 border border-gray-200 rounded cursor-pointer"
-            />
-            <button
-              onClick={() => update({ backgroundColor: 'transparent' })}
-              className="px-1.5 text-xs border border-gray-200 rounded hover:bg-gray-50"
-              title="Transparent"
-            >
-              &#8709;
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">Padding</label>
-        <input
-          type="range"
-          value={element.padding}
-          onChange={(e) => update({ padding: Number(e.target.value) })}
-          min={0}
-          max={40}
-          className="w-full"
+        <ColorField label="Color" value={element.color} onChange={(color) => update({ color })} />
+        <ColorField
+          label="Background"
+          value={element.backgroundColor}
+          onChange={(backgroundColor) => update({ backgroundColor })}
+          allowTransparent
         />
       </div>
 
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">Opacity</label>
-        <input
-          type="range"
-          value={element.opacity}
-          onChange={(e) => update({ opacity: Number(e.target.value) })}
-          min={0}
-          max={1}
-          step={0.05}
-          className="w-full"
-        />
-      </div>
+      <Slider
+        label="Padding"
+        value={element.padding}
+        onChange={(padding) => update({ padding })}
+        min={0}
+        max={40}
+        format={(v) => `${v} px`}
+      />
+
+      <Slider
+        label="Opacity"
+        value={element.opacity}
+        onChange={(opacity) => update({ opacity })}
+        min={0}
+        max={1}
+        step={0.05}
+        format={(v) => `${Math.round(v * 100)}%`}
+      />
     </>
+  )
+}
+
+function StyleToggle({
+  active,
+  onClick,
+  label,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      className={`flex-1 h-8 flex items-center justify-center rounded-md border transition-colors ${
+        active
+          ? 'bg-violet-50 border-violet-400 text-violet-700'
+          : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+      }`}
+    >
+      {children}
+    </button>
   )
 }

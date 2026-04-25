@@ -3,14 +3,19 @@ import { MoreVertical, Copy, Trash2, Pencil } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import type { Project } from '../../types'
 import { useProjectsStore } from '../../store/projectsStore'
+import TemplatePreview from './TemplatePreview'
 
 interface Props {
   project: Project
 }
 
 function formatDate(ts: number): string {
-  const d = new Date(ts)
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+  const diff = Date.now() - ts
+  const day = 24 * 60 * 60 * 1000
+  if (diff < day) return 'today'
+  if (diff < 2 * day) return 'yesterday'
+  if (diff < 7 * day) return `${Math.floor(diff / day)} days ago`
+  return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
 export default function ProjectCard({ project }: Props) {
@@ -51,26 +56,27 @@ export default function ProjectCard({ project }: Props) {
     }
   }
 
-  const aspect = project.template.canvasWidth / project.template.canvasHeight
-
   return (
-    <div className="group bg-white rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all overflow-hidden">
+    <div className="group relative">
       <button
         onClick={open}
-        className="block w-full bg-gray-50 relative"
-        style={{ aspectRatio: aspect }}
+        className="block w-full bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-lg overflow-hidden transition-all"
         aria-label={`Open ${project.name}`}
       >
-        <div
-          className="absolute inset-3 rounded shadow-sm"
-          style={{ backgroundColor: project.template.backgroundColor }}
-        />
-        <div className="absolute bottom-2 right-2 text-[10px] text-gray-400 bg-white/80 rounded px-1.5 py-0.5">
-          {project.template.elements.length} {project.template.elements.length === 1 ? 'element' : 'elements'}
+        <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 p-4">
+          <TemplatePreview
+            template={project.template}
+            className="rounded-md shadow-sm bg-white ring-1 ring-black/5"
+          />
+          {project.template.elements.length === 0 && (
+            <div className="absolute inset-4 flex items-center justify-center pointer-events-none">
+              <span className="text-[10px] uppercase tracking-wider text-gray-300">Empty</span>
+            </div>
+          )}
         </div>
       </button>
 
-      <div className="px-3 py-2 flex items-center justify-between gap-2">
+      <div className="px-1 pt-3 pb-1 flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           {renaming ? (
             <input
@@ -85,17 +91,19 @@ export default function ProjectCard({ project }: Props) {
                   setRenaming(false)
                 }
               }}
-              className="w-full text-sm font-medium border border-violet-400 rounded px-1 py-0.5 focus:outline-none"
+              className="w-full text-sm font-medium border border-violet-400 rounded px-1.5 py-0.5 focus:outline-none"
             />
           ) : (
             <button
               onClick={open}
-              className="text-sm font-medium text-gray-900 truncate hover:text-violet-700 text-left w-full"
+              className="text-sm font-semibold text-gray-900 truncate hover:text-violet-700 text-left w-full leading-tight"
             >
               {project.name}
             </button>
           )}
-          <div className="text-xs text-gray-400">Updated {formatDate(project.updatedAt)}</div>
+          <div className="text-xs text-gray-500 mt-0.5">
+            {project.template.canvasWidth}×{project.template.canvasHeight} · {formatDate(project.updatedAt)}
+          </div>
         </div>
 
         <div className="relative" ref={menuRef}>
@@ -104,13 +112,13 @@ export default function ProjectCard({ project }: Props) {
               e.stopPropagation()
               setMenuOpen((v) => !v)
             }}
-            className="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+            className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
             aria-label="Project menu"
           >
             <MoreVertical size={16} />
           </button>
           {menuOpen && (
-            <div className="absolute right-0 top-full mt-1 w-36 bg-white border border-gray-200 rounded shadow-lg py-1 z-10">
+            <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-xl py-1 z-10">
               <button
                 onClick={() => {
                   setMenuOpen(false)
@@ -129,6 +137,7 @@ export default function ProjectCard({ project }: Props) {
               >
                 <Copy size={14} /> Duplicate
               </button>
+              <div className="border-t border-gray-100 my-1" />
               <button
                 onClick={handleDelete}
                 className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"

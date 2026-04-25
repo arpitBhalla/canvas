@@ -1,12 +1,13 @@
 import { useEditorStore } from '../../store/editorStore'
+import { Field, ColorField } from './primitives'
 
 const PRESETS = [
   { label: 'A4 Portrait', w: 794, h: 1123 },
   { label: 'A4 Landscape', w: 1123, h: 794 },
   { label: 'Letter', w: 816, h: 1056 },
-  { label: 'HD (1920x1080)', w: 1920, h: 1080 },
-  { label: '1200x900', w: 1200, h: 900 },
-  { label: '800x600', w: 800, h: 600 },
+  { label: 'Full HD', w: 1920, h: 1080 },
+  { label: 'Square', w: 1080, h: 1080 },
+  { label: 'Story', w: 1080, h: 1920 },
 ]
 
 export default function CanvasProperties() {
@@ -32,69 +33,63 @@ export default function CanvasProperties() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">Template Name</label>
+      <Field label="Template name">
         <input
           type="text"
           value={template.name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm"
+          className="w-full h-8 border border-gray-200 rounded-md px-2 text-sm focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20"
         />
-      </div>
+      </Field>
 
       <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Width (px)</label>
+        <Field label="Width" hint="px">
           <input
             type="number"
             value={template.canvasWidth}
             onChange={(e) => setSize(Number(e.target.value), template.canvasHeight)}
             min={200}
             max={3000}
-            className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm"
+            className="w-full h-8 border border-gray-200 rounded-md px-2 text-sm focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20"
           />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Height (px)</label>
+        </Field>
+        <Field label="Height" hint="px">
           <input
             type="number"
             value={template.canvasHeight}
             onChange={(e) => setSize(template.canvasWidth, Number(e.target.value))}
             min={200}
             max={3000}
-            className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm"
+            className="w-full h-8 border border-gray-200 rounded-md px-2 text-sm focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20"
           />
-        </div>
+        </Field>
       </div>
 
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">Presets</label>
-        <div className="space-y-1">
-          {PRESETS.map((p) => (
-            <button
-              key={p.label}
-              onClick={() => setSize(p.w, p.h)}
-              className={`w-full text-left px-2 py-1.5 text-sm rounded transition-colors ${
-                template.canvasWidth === p.w && template.canvasHeight === p.h
-                  ? 'bg-violet-100 text-violet-700'
-                  : 'hover:bg-gray-50 text-gray-600'
-              }`}
-            >
-              {p.label} <span className="text-gray-400">({p.w}x{p.h})</span>
-            </button>
-          ))}
+      <Field label="Presets">
+        <div className="grid grid-cols-2 gap-1.5">
+          {PRESETS.map((p) => {
+            const active = template.canvasWidth === p.w && template.canvasHeight === p.h
+            return (
+              <button
+                key={p.label}
+                onClick={() => setSize(p.w, p.h)}
+                className={`text-left px-2 py-1.5 rounded-md border transition-colors ${
+                  active
+                    ? 'bg-violet-50 border-violet-300 text-violet-700'
+                    : 'border-gray-200 hover:bg-gray-50 text-gray-700'
+                }`}
+              >
+                <div className="text-xs font-medium">{p.label}</div>
+                <div className="text-[10px] text-gray-400">
+                  {p.w}×{p.h}
+                </div>
+              </button>
+            )
+          })}
         </div>
-      </div>
+      </Field>
 
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">Background Color</label>
-        <input
-          type="color"
-          value={template.backgroundColor}
-          onChange={(e) => setBg(e.target.value)}
-          className="w-full h-8 border border-gray-200 rounded cursor-pointer"
-        />
-      </div>
+      <ColorField label="Background" value={template.backgroundColor} onChange={setBg} />
     </div>
   )
 }

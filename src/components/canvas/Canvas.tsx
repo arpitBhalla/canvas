@@ -15,7 +15,7 @@ export default function Canvas() {
   return (
     <div
       ref={wrapperRef}
-      className={`relative flex-1 overflow-auto flex items-center justify-center bg-gray-200 transition-shadow ${
+      className={`canvas-dot-bg scroll-thin relative flex-1 overflow-auto flex items-center justify-center transition-shadow ${
         isDragging ? 'ring-4 ring-violet-400 ring-inset' : ''
       }`}
       onClick={(e) => {
@@ -25,6 +25,7 @@ export default function Canvas() {
       }}
     >
       <div
+        className="my-12"
         style={{
           transform: `scale(${zoom})`,
           transformOrigin: 'center center',
@@ -32,11 +33,13 @@ export default function Canvas() {
       >
         <div
           data-canvas-bg="true"
-          className="relative shadow-xl"
+          className="relative rounded-sm"
           style={{
             width: template.canvasWidth,
             height: template.canvasHeight,
             backgroundColor: template.backgroundColor,
+            boxShadow:
+              '0 1px 2px rgba(0,0,0,0.04), 0 12px 32px -8px rgba(0,0,0,0.18), 0 4px 12px -4px rgba(0,0,0,0.08)',
           }}
         >
           {sorted.map((el) => (

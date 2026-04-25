@@ -37,6 +37,46 @@ function readFileAsImage(file: File): Promise<{ src: string; width: number; heig
   })
 }
 
+function ToolButton({
+  onClick,
+  title,
+  children,
+}: {
+  onClick: () => void
+  title: string
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className="flex items-center gap-1.5 h-8 px-2.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+    >
+      {children}
+    </button>
+  )
+}
+
+function IconButton({
+  onClick,
+  title,
+  children,
+}: {
+  onClick: () => void
+  title: string
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className="flex items-center justify-center h-8 w-8 text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-md transition-colors"
+    >
+      {children}
+    </button>
+  )
+}
+
 export default function Header() {
   const navigate = useNavigate()
   const { id: projectId } = useParams<{ id: string }>()
@@ -98,15 +138,17 @@ export default function Header() {
   }
 
   return (
-    <header className="h-12 bg-white border-b border-gray-200 flex items-center px-3 gap-1 shrink-0">
+    <header className="h-14 bg-white border-b border-gray-200 flex items-center px-3 gap-2 shrink-0">
       <button
         onClick={() => navigate('/')}
-        className="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors"
+        className="flex items-center gap-1.5 h-8 px-2 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
         title="Back to projects"
       >
         <ArrowLeft size={16} />
         <span className="hidden sm:inline">Projects</span>
       </button>
+
+      <div className="h-6 w-px bg-gray-200" />
 
       <input
         value={templateName}
@@ -115,91 +157,67 @@ export default function Header() {
         onKeyDown={(e) => {
           if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
         }}
-        className="ml-2 max-w-[200px] text-sm font-medium text-gray-900 bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:outline-none rounded px-2 py-1"
-      />
-
-      <div className="h-6 w-px bg-gray-200 mx-2" />
-
-      <button
-        onClick={() => addElement('text')}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors"
-        title="Add Text"
-      >
-        <Type size={16} />
-        <span className="hidden sm:inline">Text</span>
-      </button>
-      <button
-        onClick={() => addElement('shape', { shape: 'rectangle' } as Partial<ShapeElement>)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors"
-        title="Add Rectangle"
-      >
-        <Square size={16} />
-        <span className="hidden sm:inline">Rect</span>
-      </button>
-      <button
-        onClick={() => addElement('shape', { shape: 'circle', borderRadius: 0 } as Partial<ShapeElement>)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors"
-        title="Add Circle"
-      >
-        <Circle size={16} />
-        <span className="hidden sm:inline">Circle</span>
-      </button>
-      <button
-        onClick={() => fileInputRef.current?.click()}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors"
-        title="Upload image"
-      >
-        <Image size={16} />
-        <span className="hidden sm:inline">Image</span>
-      </button>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        className="hidden"
-        onChange={(e) => {
-          handleImageFiles(e.target.files)
-          e.target.value = ''
-        }}
+        className="max-w-[220px] h-8 text-sm font-semibold text-gray-900 bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:outline-none rounded-md px-2 transition-colors"
       />
 
       <div className="h-6 w-px bg-gray-200 mx-1" />
 
-      <button
-        onClick={() => useEditorStore.temporal.getState().undo()}
-        className="p-1.5 text-gray-500 hover:bg-gray-100 rounded transition-colors"
-        title="Undo (Cmd+Z)"
-      >
-        <Undo2 size={16} />
-      </button>
-      <button
-        onClick={() => useEditorStore.temporal.getState().redo()}
-        className="p-1.5 text-gray-500 hover:bg-gray-100 rounded transition-colors"
-        title="Redo (Cmd+Shift+Z)"
-      >
-        <Redo2 size={16} />
-      </button>
+      <div className="flex items-center gap-0.5 p-0.5 bg-gray-50 rounded-lg border border-gray-200/70">
+        <ToolButton onClick={() => addElement('text')} title="Add text">
+          <Type size={16} />
+          <span className="hidden md:inline">Text</span>
+        </ToolButton>
+        <ToolButton
+          onClick={() => addElement('shape', { shape: 'rectangle' } as Partial<ShapeElement>)}
+          title="Add rectangle"
+        >
+          <Square size={16} />
+          <span className="hidden md:inline">Rect</span>
+        </ToolButton>
+        <ToolButton
+          onClick={() => addElement('shape', { shape: 'circle', borderRadius: 0 } as Partial<ShapeElement>)}
+          title="Add circle"
+        >
+          <Circle size={16} />
+          <span className="hidden md:inline">Circle</span>
+        </ToolButton>
+        <ToolButton onClick={() => fileInputRef.current?.click()} title="Upload image">
+          <Image size={16} />
+          <span className="hidden md:inline">Image</span>
+        </ToolButton>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            handleImageFiles(e.target.files)
+            e.target.value = ''
+          }}
+        />
+      </div>
 
-      <div className="h-6 w-px bg-gray-200 mx-1" />
+      <div className="flex items-center gap-0.5">
+        <IconButton onClick={() => useEditorStore.temporal.getState().undo()} title="Undo (Cmd+Z)">
+          <Undo2 size={16} />
+        </IconButton>
+        <IconButton onClick={() => useEditorStore.temporal.getState().redo()} title="Redo (Cmd+Shift+Z)">
+          <Redo2 size={16} />
+        </IconButton>
+      </div>
 
-      <button
-        onClick={() => setZoom(zoom - 0.1)}
-        className="p-1.5 text-gray-500 hover:bg-gray-100 rounded transition-colors"
-        title="Zoom Out"
-      >
-        <ZoomOut size={16} />
-      </button>
-      <span className="text-xs text-gray-500 min-w-[3rem] text-center">
-        {Math.round(zoom * 100)}%
-      </span>
-      <button
-        onClick={() => setZoom(zoom + 0.1)}
-        className="p-1.5 text-gray-500 hover:bg-gray-100 rounded transition-colors"
-        title="Zoom In"
-      >
-        <ZoomIn size={16} />
-      </button>
+      <div className="flex items-center bg-gray-50 border border-gray-200/70 rounded-lg overflow-hidden">
+        <IconButton onClick={() => setZoom(zoom - 0.1)} title="Zoom out">
+          <ZoomOut size={16} />
+        </IconButton>
+        <span className="text-xs font-medium text-gray-600 min-w-[3rem] text-center px-1 tabular-nums">
+          {Math.round(zoom * 100)}%
+        </span>
+        <IconButton onClick={() => setZoom(zoom + 0.1)} title="Zoom in">
+          <ZoomIn size={16} />
+        </IconButton>
+      </div>
 
       <div className="flex-1" />
 
@@ -215,8 +233,8 @@ export default function Header() {
           a.click()
           URL.revokeObjectURL(url)
         }}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors"
-        title="Export Template as JSON"
+        className="flex items-center gap-1.5 h-8 px-2.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+        title="Export template as JSON"
       >
         <Download size={16} />
         <span className="hidden sm:inline">Export</span>
@@ -227,8 +245,8 @@ export default function Header() {
       <button
         onClick={togglePreview}
         disabled={!dataSource}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-violet-600 text-white rounded hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        title={dataSource ? 'Preview Merge' : 'Upload data first to preview'}
+        className="flex items-center gap-1.5 h-8 px-3 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        title={dataSource ? 'Preview merge' : 'Upload data first to preview'}
       >
         <Eye size={16} />
         Preview
@@ -236,11 +254,11 @@ export default function Header() {
       <button
         onClick={handleExportPDF}
         disabled={!dataSource || exportingPdf}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        className="flex items-center gap-1.5 h-8 px-3 text-sm font-medium bg-gray-900 text-white rounded-md hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
         title={dataSource ? 'Export all records as PDF' : 'Upload data first to export PDF'}
       >
         {exportingPdf ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
-        {exportingPdf ? 'Exporting...' : 'PDF'}
+        {exportingPdf ? 'Exporting…' : 'PDF'}
       </button>
     </header>
   )

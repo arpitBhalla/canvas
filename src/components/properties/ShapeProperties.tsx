@@ -1,5 +1,7 @@
+import { Square, Circle } from 'lucide-react'
 import { useEditorStore } from '../../store/editorStore'
 import type { ShapeElement } from '../../types'
+import { Slider, SegmentedControl, ColorField } from './primitives'
 
 interface Props {
   element: ShapeElement
@@ -14,82 +16,55 @@ export default function ShapeProperties({ element }: Props) {
 
   return (
     <>
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">Shape</label>
-        <div className="grid grid-cols-2 gap-1">
-          {(['rectangle', 'circle'] as const).map((shape) => (
-            <button
-              key={shape}
-              onClick={() => update({ shape })}
-              className={`py-1.5 text-sm rounded border capitalize transition-colors ${
-                element.shape === shape ? 'bg-gray-200 border-gray-300' : 'border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              {shape}
-            </button>
-          ))}
-        </div>
-      </div>
+      <SegmentedControl
+        label="Shape"
+        value={element.shape}
+        onChange={(shape) => update({ shape })}
+        options={[
+          { value: 'rectangle', label: 'Rectangle', icon: <Square size={12} /> },
+          { value: 'circle', label: 'Circle', icon: <Circle size={12} /> },
+        ]}
+      />
 
       <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Fill</label>
-          <input
-            type="color"
-            value={element.fill}
-            onChange={(e) => update({ fill: e.target.value })}
-            className="w-full h-8 border border-gray-200 rounded cursor-pointer"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Stroke</label>
-          <input
-            type="color"
-            value={element.stroke === 'transparent' ? '#000000' : element.stroke}
-            onChange={(e) => update({ stroke: e.target.value })}
-            className="w-full h-8 border border-gray-200 rounded cursor-pointer"
-          />
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">Stroke Width</label>
-        <input
-          type="range"
-          value={element.strokeWidth}
-          onChange={(e) => update({ strokeWidth: Number(e.target.value) })}
-          min={0}
-          max={20}
-          className="w-full"
+        <ColorField label="Fill" value={element.fill} onChange={(fill) => update({ fill })} allowTransparent />
+        <ColorField
+          label="Stroke"
+          value={element.stroke === 'transparent' ? '#000000' : element.stroke}
+          onChange={(stroke) => update({ stroke })}
+          allowTransparent
         />
       </div>
+
+      <Slider
+        label="Stroke width"
+        value={element.strokeWidth}
+        onChange={(strokeWidth) => update({ strokeWidth })}
+        min={0}
+        max={20}
+        format={(v) => `${v} px`}
+      />
 
       {element.shape === 'rectangle' && (
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Border Radius</label>
-          <input
-            type="range"
-            value={element.borderRadius}
-            onChange={(e) => update({ borderRadius: Number(e.target.value) })}
-            min={0}
-            max={100}
-            className="w-full"
-          />
-        </div>
+        <Slider
+          label="Border radius"
+          value={element.borderRadius}
+          onChange={(borderRadius) => update({ borderRadius })}
+          min={0}
+          max={100}
+          format={(v) => `${v} px`}
+        />
       )}
 
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">Opacity</label>
-        <input
-          type="range"
-          value={element.opacity}
-          onChange={(e) => update({ opacity: Number(e.target.value) })}
-          min={0}
-          max={1}
-          step={0.05}
-          className="w-full"
-        />
-      </div>
+      <Slider
+        label="Opacity"
+        value={element.opacity}
+        onChange={(opacity) => update({ opacity })}
+        min={0}
+        max={1}
+        step={0.05}
+        format={(v) => `${Math.round(v * 100)}%`}
+      />
     </>
   )
 }

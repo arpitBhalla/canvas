@@ -13,40 +13,58 @@ export default function ElementActions({ element }: Props) {
   const reorderElement = useEditorStore((s) => s.reorderElement)
 
   return (
-    <div className="border-t border-gray-200 pt-4 space-y-2">
-      <label className="block text-xs text-gray-500 mb-2">Actions</label>
-      <div className="grid grid-cols-2 gap-1">
-        <button
-          onClick={() => duplicateElement(element.id)}
-          className="flex items-center gap-1.5 py-1.5 px-2 text-sm border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+    <div className="space-y-2">
+      <div className="text-[11px] font-medium text-gray-600">Actions</div>
+      <div className="grid grid-cols-2 gap-1.5">
+        <ActionButton onClick={() => duplicateElement(element.id)} icon={<Copy size={13} />}>
+          Duplicate
+        </ActionButton>
+        <ActionButton onClick={() => reorderElement(element.id, 'top')} icon={<ArrowUpToLine size={13} />}>
+          Front
+        </ActionButton>
+        <ActionButton onClick={() => reorderElement(element.id, 'bottom')} icon={<ArrowDownToLine size={13} />}>
+          Back
+        </ActionButton>
+        <ActionButton
+          onClick={() => updateElement(element.id, { locked: !element.locked })}
+          icon={element.locked ? <Lock size={13} /> : <Unlock size={13} />}
+          active={element.locked}
         >
-          <Copy size={14} /> Duplicate
-        </button>
-        <button
-          onClick={() => deleteElement(element.id)}
-          className="flex items-center gap-1.5 py-1.5 px-2 text-sm border border-red-200 text-red-600 rounded hover:bg-red-50 transition-colors"
-        >
-          <Trash2 size={14} /> Delete
-        </button>
-        <button
-          onClick={() => reorderElement(element.id, 'top')}
-          className="flex items-center gap-1.5 py-1.5 px-2 text-sm border border-gray-200 rounded hover:bg-gray-50 transition-colors"
-        >
-          <ArrowUpToLine size={14} /> Front
-        </button>
-        <button
-          onClick={() => reorderElement(element.id, 'bottom')}
-          className="flex items-center gap-1.5 py-1.5 px-2 text-sm border border-gray-200 rounded hover:bg-gray-50 transition-colors"
-        >
-          <ArrowDownToLine size={14} /> Back
-        </button>
+          {element.locked ? 'Locked' : 'Unlock'}
+        </ActionButton>
       </div>
       <button
-        onClick={() => updateElement(element.id, { locked: !element.locked })}
-        className="flex items-center gap-1.5 w-full py-1.5 px-2 text-sm border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+        onClick={() => deleteElement(element.id)}
+        className="w-full h-8 flex items-center justify-center gap-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-md hover:bg-red-50 transition-colors"
       >
-        {element.locked ? <><Lock size={14} /> Locked</> : <><Unlock size={14} /> Unlocked</>}
+        <Trash2 size={13} /> Delete
       </button>
     </div>
+  )
+}
+
+function ActionButton({
+  onClick,
+  icon,
+  active,
+  children,
+}: {
+  onClick: () => void
+  icon: React.ReactNode
+  active?: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`h-8 flex items-center justify-center gap-1.5 text-xs font-medium border rounded-md transition-colors ${
+        active
+          ? 'bg-violet-50 border-violet-300 text-violet-700'
+          : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+      }`}
+    >
+      {icon}
+      {children}
+    </button>
   )
 }
