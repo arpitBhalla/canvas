@@ -230,10 +230,18 @@ export default function CanvasElement({ element }: Props) {
         outline,
         outlineOffset: '1px',
         cursor: isEditingThis ? 'text' : element.locked ? 'default' : 'move',
-        transform: element.rotation ? `rotate(${element.rotation}deg)` : undefined,
       }}
     >
-      {renderElement()}
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          transform: element.rotation ? `rotate(${element.rotation}deg)` : undefined,
+          transformOrigin: 'center center',
+        }}
+      >
+        {renderElement()}
+      </div>
       {isPrimarySelected && !element.locked && !isEditingThis && (
         <RotationHandle elementId={element.id} />
       )}
