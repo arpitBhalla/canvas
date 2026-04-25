@@ -17,7 +17,7 @@ export interface ShadowConfig {
 
 interface BaseElement {
   id: string
-  type: 'text' | 'shape' | 'image' | 'path'
+  type: 'text' | 'shape' | 'image' | 'path' | 'qr'
   position: Position
   size: Size
   rotation: number
@@ -28,6 +28,7 @@ interface BaseElement {
   visible?: boolean
   hideWhenEmpty?: string
   shadow?: ShadowConfig
+  groupId?: string
 }
 
 export interface TextElement extends BaseElement {
@@ -71,12 +72,33 @@ export interface ImageFilters {
   blur?: number
 }
 
+export interface ImageCrop {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
 export interface ImageElement extends BaseElement {
   type: 'image'
   src: string
   objectFit: 'cover' | 'contain' | 'fill'
   borderRadius: number
   filters?: ImageFilters
+  crop?: ImageCrop
+  naturalWidth?: number
+  naturalHeight?: number
+}
+
+export type QrErrorCorrectionLevel = 'L' | 'M' | 'Q' | 'H'
+
+export interface QrElement extends BaseElement {
+  type: 'qr'
+  value: string
+  level: QrErrorCorrectionLevel
+  foreground: string
+  background: string
+  margin: number
 }
 
 export type PathMode = 'freehand' | 'curve' | 'straight'
@@ -92,7 +114,7 @@ export interface PathElement extends BaseElement {
   arrowhead?: ArrowEnd
 }
 
-export type CanvasElement = TextElement | ShapeElement | ImageElement | PathElement
+export type CanvasElement = TextElement | ShapeElement | ImageElement | PathElement | QrElement
 
 export interface Template {
   id: string

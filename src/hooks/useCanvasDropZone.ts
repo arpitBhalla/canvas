@@ -86,6 +86,8 @@ export function useCanvasDropZone(ref: RefObject<HTMLElement | null>) {
             src: img.src,
             position: { x, y },
             size: fitted,
+            naturalWidth: img.width,
+            naturalHeight: img.height,
           })
           offset += 20
         } catch {

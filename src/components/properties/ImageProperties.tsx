@@ -1,9 +1,10 @@
-import { useRef } from 'react'
-import { Upload, Variable } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Upload, Variable, Crop } from 'lucide-react'
 import { useEditorStore } from '../../store/editorStore'
 import type { ImageElement } from '../../types'
 import { Field, Slider, SegmentedControl } from './primitives'
 import { isVariableToken, variableTokenName } from '../../utils/variables'
+import CropModal from './CropModal'
 
 interface Props {
   element: ImageElement
@@ -13,6 +14,8 @@ export default function ImageProperties({ element }: Props) {
   const updateElement = useEditorStore((s) => s.updateElement)
   const dataSource = useEditorStore((s) => s.dataSource)
   const fileRef = useRef<HTMLInputElement>(null)
+  const [cropOpen, setCropOpen] = useState(false)
+  const canCrop = !!element.src && !isVariableToken(element.src) && !element.src.startsWith('{{')
 
   function update(updates: Partial<ImageElement>) {
     updateElement(element.id, updates)
@@ -22,7 +25,19 @@ export default function ImageProperties({ element }: Props) {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
-    reader.onload = () => update({ src: reader.result as string })
+    reader.onload = () => {
+      const src = String(reader.result ?? '')
+      const probe = new window.Image()
+      probe.onload = () => {
+        update({
+          src,
+          naturalWidth: probe.naturalWidth,
+          naturalHeight: probe.naturalHeight,
+          crop: undefined,
+        })
+      }
+      probe.src = src
+    }
     reader.readAsDataURL(file)
   }
 
@@ -89,6 +104,27 @@ export default function ImageProperties({ element }: Props) {
         ]}
       />
 
+      <Field label="Crop">
+        <div className="flex gap-1.5">
+          <button
+            onClick={() => setCropOpen(true)}
+            disabled={!canCrop}
+            className="flex-1 h-8 flex items-center justify-center gap-1.5 text-xs font-medium border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <Crop size={13} />
+            {element.crop ? 'Edit crop' : 'Crop image'}
+          </button>
+          {element.crop && (
+            <button
+              onClick={() => update({ crop: undefined })}
+              className="h-8 px-2.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50"
+            >
+              Reset
+            </button>
+          )}
+        </div>
+      </Field>
+
       <Slider
         label="Border radius"
         value={element.borderRadius}
@@ -153,6 +189,8 @@ export default function ImageProperties({ element }: Props) {
           format={(v) => `${v} px`}
         />
       </div>
+
+      {cropOpen && <CropModal element={element} onClose={() => setCropOpen(false)} />}
     </>
   )
 }

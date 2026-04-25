@@ -1,6 +1,13 @@
 import { useEffect } from 'react'
 import { useEditorStore } from '../store/editorStore'
 
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  const tag = target.tagName
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true
+  return target.isContentEditable
+}
+
 export function useCanvasKeyboard() {
   const deleteSelected = useEditorStore((s) => s.deleteSelected)
   const duplicateSelected = useEditorStore((s) => s.duplicateSelected)
@@ -11,6 +18,8 @@ export function useCanvasKeyboard() {
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      if (isEditableTarget(e.target)) return
+
       const state = useEditorStore.getState()
       const { selectedElementIds, editingTextId, previewOpen } = state
 
@@ -28,6 +37,13 @@ export function useCanvasKeyboard() {
         e.preventDefault()
         const ids = state.template.elements.map((el) => el.id)
         selectMany(ids)
+        return
+      }
+
+      if (e.key === 'g' && mod) {
+        e.preventDefault()
+        if (e.shiftKey) state.ungroupSelected()
+        else state.groupSelected()
         return
       }
 

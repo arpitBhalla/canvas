@@ -17,13 +17,12 @@ import {
   Pencil,
   Spline,
   Minus,
+  QrCode,
 } from 'lucide-react'
 import type { PathMode } from '../../types'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useEditorStore } from '../../store/editorStore'
 import { useProjectsStore } from '../../store/projectsStore'
-import { generatePDF } from '../../utils/pdf'
-import { exportRecordsAsZip } from '../../utils/imageExport'
 import type { ShapeElement } from '../../types'
 
 const MAX_IMAGE_PIXELS = 1600
@@ -132,6 +131,7 @@ export default function Header() {
     if (!ds) return
     setExportingPdf(true)
     try {
+      const { generatePDF } = await import('../../utils/pdf')
       await generatePDF(template, ds.records)
     } finally {
       setExportingPdf(false)
@@ -144,6 +144,7 @@ export default function Header() {
     if (!ds) return
     setExportingZip({ current: 0, total: ds.records.length })
     try {
+      const { exportRecordsAsZip } = await import('../../utils/imageExport')
       await exportRecordsAsZip(template, ds.records, {
         onProgress: (current, total) => setExportingZip({ current, total }),
       })
@@ -169,7 +170,13 @@ export default function Header() {
         const height = Math.round(img.height * ratio)
         const x = Math.max(0, Math.min(template.canvasWidth - width, (template.canvasWidth - width) / 2 + offset))
         const y = Math.max(0, Math.min(template.canvasHeight - height, (template.canvasHeight - height) / 2 + offset))
-        addElement('image', { src: img.src, size: { width, height }, position: { x, y } })
+        addElement('image', {
+          src: img.src,
+          size: { width, height },
+          position: { x, y },
+          naturalWidth: img.width,
+          naturalHeight: img.height,
+        })
         offset += 20
       } catch {
         // skip
@@ -234,6 +241,10 @@ export default function Header() {
         <ToolButton onClick={() => fileInputRef.current?.click()} title="Upload image">
           <Image size={16} />
           <span className="hidden md:inline">Image</span>
+        </ToolButton>
+        <ToolButton onClick={() => addElement('qr')} title="Add QR code">
+          <QrCode size={16} />
+          <span className="hidden md:inline">QR</span>
         </ToolButton>
         <input
           ref={fileInputRef}

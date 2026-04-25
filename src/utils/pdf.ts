@@ -1,10 +1,11 @@
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
-import type { Template, TextElement, ShapeElement, ImageElement, PathElement } from '../types'
+import type { Template, TextElement, ShapeElement, ImageElement, PathElement, QrElement } from '../types'
 import { replaceVariables, shouldHideForRecord, isVariableToken, variableTokenName } from './variables'
 import { loadFontsForTemplate, waitForFontsReady } from './fonts'
 import { shadowToCss, imageFiltersToCss, gradientToCss } from './style'
 import { pointsToD } from './path'
+import { buildQrSvgElement } from './qr'
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
@@ -84,8 +85,7 @@ function buildPathSvg(p: PathElement): SVGSVGElement {
   const path = document.createElementNS(SVG_NS, 'path')
   path.setAttribute('d', pointsToD(p.points, p.mode, p.closed))
   path.setAttribute('fill', p.closed ? p.stroke : 'none')
-  if (p.closed) path.setAttribute('fill-opacity', '0.1')
-  path.setAttribute('stroke', p.stroke)
+  path.setAttribute('stroke', p.closed && p.strokeWidth === 0 ? 'none' : p.stroke)
   path.setAttribute('stroke-width', String(p.strokeWidth))
   path.setAttribute('stroke-linecap', 'round')
   path.setAttribute('stroke-linejoin', 'round')
@@ -125,6 +125,7 @@ export function renderPageToDOM(
     wrap.style.height = `${el.size.height}px`
     wrap.style.zIndex = String(el.zIndex)
     wrap.style.opacity = String(el.opacity)
+    if (el.rotation) wrap.style.transform = `rotate(${el.rotation}deg)`
 
     if (el.type === 'text') {
       const t = el as TextElement
@@ -189,23 +190,56 @@ export function renderPageToDOM(
         src = name ? data[name] ?? '' : ''
       }
       if (src) {
-        const imgEl = document.createElement('img')
-        imgEl.src = src
-        imgEl.style.width = '100%'
-        imgEl.style.height = '100%'
-        imgEl.style.objectFit = img.objectFit
-        imgEl.style.borderRadius = `${img.borderRadius}px`
-        imgEl.crossOrigin = 'anonymous'
         const filterCss = imageFiltersToCss(img.filters)
         const sh = shadowToCss(img.shadow)
         const combined = [filterCss, sh ? `drop-shadow(${sh})` : null].filter(Boolean).join(' ')
-        if (combined) imgEl.style.filter = combined
-        wrap.appendChild(imgEl)
+
+        if (img.crop && img.naturalWidth && img.naturalHeight) {
+          const sx = img.size.width / img.crop.width
+          const sy = img.size.height / img.crop.height
+          const inner = document.createElement('div')
+          inner.style.width = '100%'
+          inner.style.height = '100%'
+          inner.style.overflow = 'hidden'
+          inner.style.position = 'relative'
+          inner.style.borderRadius = `${img.borderRadius}px`
+          const imgEl = document.createElement('img')
+          imgEl.src = src
+          imgEl.style.position = 'absolute'
+          imgEl.style.left = '0'
+          imgEl.style.top = '0'
+          imgEl.style.maxWidth = 'none'
+          imgEl.style.width = `${img.naturalWidth * sx}px`
+          imgEl.style.height = `${img.naturalHeight * sy}px`
+          imgEl.style.transform = `translate(${-img.crop.x * sx}px, ${-img.crop.y * sy}px)`
+          if (combined) imgEl.style.filter = combined
+          imgEl.crossOrigin = 'anonymous'
+          inner.appendChild(imgEl)
+          wrap.appendChild(inner)
+        } else {
+          const imgEl = document.createElement('img')
+          imgEl.src = src
+          imgEl.style.width = '100%'
+          imgEl.style.height = '100%'
+          imgEl.style.objectFit = img.objectFit
+          imgEl.style.borderRadius = `${img.borderRadius}px`
+          imgEl.crossOrigin = 'anonymous'
+          if (combined) imgEl.style.filter = combined
+          wrap.appendChild(imgEl)
+        }
       }
     } else if (el.type === 'path') {
       const p = el as PathElement
       wrap.appendChild(buildPathSvg(p))
       const sh = shadowToCss(p.shadow)
+      if (sh) wrap.style.filter = `drop-shadow(${sh})`
+    } else if (el.type === 'qr') {
+      const q = el as QrElement
+      const resolved = isVariableToken(q.value)
+        ? data[variableTokenName(q.value) ?? ''] ?? ''
+        : q.value
+      wrap.appendChild(buildQrSvgElement(q, resolved))
+      const sh = shadowToCss(q.shadow)
       if (sh) wrap.style.filter = `drop-shadow(${sh})`
     }
 

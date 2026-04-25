@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Eye, EyeOff, Lock, Unlock, Type, Square, Circle, Triangle, Star, Minus, MoveRight, PenTool, Image as ImageIcon, GripVertical } from 'lucide-react'
+import { Eye, EyeOff, Lock, Unlock, Type, Square, Circle, Triangle, Star, Minus, MoveRight, PenTool, QrCode, Image as ImageIcon, GripVertical } from 'lucide-react'
 import { useEditorStore } from '../../store/editorStore'
 import type { CanvasElement, ShapeElement } from '../../types'
 
@@ -15,6 +15,7 @@ function defaultName(el: CanvasElement): string {
     return s.shape.charAt(0).toUpperCase() + s.shape.slice(1)
   }
   if (el.type === 'path') return 'Path'
+  if (el.type === 'qr') return 'QR code'
   return 'Image'
 }
 
@@ -22,6 +23,7 @@ function iconFor(el: CanvasElement) {
   if (el.type === 'text') return Type
   if (el.type === 'image') return ImageIcon
   if (el.type === 'path') return PenTool
+  if (el.type === 'qr') return QrCode
   const s = el as ShapeElement
   if (s.shape === 'circle') return Circle
   if (s.shape === 'triangle') return Triangle

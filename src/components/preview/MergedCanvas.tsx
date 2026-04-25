@@ -1,8 +1,10 @@
 import { useEditorStore } from '../../store/editorStore'
 import { replaceVariables, shouldHideForRecord, isVariableToken, variableTokenName } from '../../utils/variables'
-import { shadowToCss, imageFiltersToCss, shapeFillCss } from '../../utils/style'
+import { shadowToCss, shapeFillCss } from '../../utils/style'
 import { pointsToD } from '../../utils/path'
-import type { TextElement, ShapeElement, ImageElement, PathElement } from '../../types'
+import QrElementRenderer from '../canvas/QrElement'
+import ImageElementRenderer from '../canvas/ImageElement'
+import type { TextElement, ShapeElement, ImageElement, PathElement, QrElement } from '../../types'
 
 interface Props {
   data: Record<string, string>
@@ -33,6 +35,7 @@ export default function MergedCanvas({ data }: Props) {
           height: el.size.height,
           zIndex: el.zIndex,
           opacity: el.opacity,
+          transform: el.rotation ? `rotate(${el.rotation}deg)` : undefined,
         }
 
         if (el.type === 'text') {
@@ -148,28 +151,19 @@ export default function MergedCanvas({ data }: Props) {
             const name = variableTokenName(src)
             src = name ? data[name] ?? '' : ''
           }
-          const shadow = shadowToCss(img.shadow)
-          const filterCss = imageFiltersToCss(img.filters)
-          const combinedFilter = [filterCss, shadow ? `drop-shadow(${shadow})` : null].filter(Boolean).join(' ')
-          return src ? (
-            <img
-              key={el.id}
-              src={src}
-              alt=""
-              style={{
-                ...baseStyle,
-                objectFit: img.objectFit,
-                borderRadius: img.borderRadius,
-                filter: combinedFilter || undefined,
-              }}
-            />
-          ) : (
-            <div
-              key={el.id}
-              style={baseStyle}
-              className="flex items-center justify-center bg-gray-100 text-gray-400 text-sm border-2 border-dashed border-gray-300"
-            >
-              No image
+          return (
+            <div key={el.id} style={baseStyle}>
+              <ImageElementRenderer element={img} src={src} />
+            </div>
+          )
+        }
+
+        if (el.type === 'qr') {
+          const q = el as QrElement
+          const resolved = isVariableToken(q.value) ? data[variableTokenName(q.value) ?? ''] ?? '' : q.value
+          return (
+            <div key={el.id} style={baseStyle}>
+              <QrElementRenderer element={q} value={resolved} />
             </div>
           )
         }
@@ -209,8 +203,7 @@ export default function MergedCanvas({ data }: Props) {
               <path
                 d={pointsToD(p.points, p.mode, p.closed)}
                 fill={p.closed ? p.stroke : 'none'}
-                fillOpacity={p.closed ? 0.1 : 0}
-                stroke={p.stroke}
+                stroke={p.closed && p.strokeWidth === 0 ? 'none' : p.stroke}
                 strokeWidth={p.strokeWidth}
                 strokeLinecap="round"
                 strokeLinejoin="round"

@@ -39,8 +39,7 @@ export default function PathElement({ element }: Props) {
       <path
         d={d}
         fill={element.closed ? element.stroke : 'none'}
-        fillOpacity={element.closed ? 0.1 : 0}
-        stroke={element.stroke}
+        stroke={element.closed && element.strokeWidth === 0 ? 'none' : element.stroke}
         strokeWidth={element.strokeWidth}
         strokeLinecap="round"
         strokeLinejoin="round"

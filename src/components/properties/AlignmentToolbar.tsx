@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   AlignStartHorizontal,
   AlignCenterHorizontal,
@@ -7,11 +8,15 @@ import {
   AlignEndVertical,
   AlignHorizontalDistributeCenter,
   AlignVerticalDistributeCenter,
+  AlignHorizontalSpaceAround,
+  AlignVerticalSpaceAround,
   Trash2,
   Copy,
   Lock,
+  Group,
+  Ungroup,
 } from 'lucide-react'
-import { useEditorStore, type AlignAxis, type DistributeAxis } from '../../store/editorStore'
+import { useEditorStore, type AlignAxis, type DistributeAxis, type DistributeMode } from '../../store/editorStore'
 
 export default function AlignmentToolbar() {
   const selectedElementIds = useEditorStore((s) => s.selectedElementIds)
@@ -21,8 +26,16 @@ export default function AlignmentToolbar() {
   const duplicateSelected = useEditorStore((s) => s.duplicateSelected)
   const elements = useEditorStore((s) => s.template.elements)
   const updateElement = useEditorStore((s) => s.updateElement)
+  const groupSelected = useEditorStore((s) => s.groupSelected)
+  const ungroupSelected = useEditorStore((s) => s.ungroupSelected)
+
+  const someGrouped = selectedElementIds.some((id) => {
+    const el = elements.find((e) => e.id === id)
+    return !!el?.groupId
+  })
 
   const canDistribute = selectedElementIds.length >= 3
+  const [distMode, setDistMode] = useState<DistributeMode>('spacing')
 
   function lockAll() {
     for (const id of selectedElementIds) updateElement(id, { locked: true })
@@ -65,14 +78,44 @@ export default function AlignmentToolbar() {
       </div>
 
       <div>
-        <div className="text-[11px] font-medium text-gray-600 mb-2">Distribute</div>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[11px] font-medium text-gray-600">Distribute</span>
+          <div className="flex p-0.5 bg-gray-100 rounded">
+            <button
+              onClick={() => setDistMode('spacing')}
+              className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${
+                distMode === 'spacing' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+              }`}
+            >
+              Gap
+            </button>
+            <button
+              onClick={() => setDistMode('center')}
+              className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${
+                distMode === 'center' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+              }`}
+            >
+              Center
+            </button>
+          </div>
+        </div>
         <div className="grid grid-cols-2 gap-1">
-          <DistBtn axis="horizontal" disabled={!canDistribute} onClick={distributeSelected} title="Distribute horizontally">
-            <AlignHorizontalDistributeCenter size={14} />
+          <DistBtn
+            axis="horizontal"
+            disabled={!canDistribute}
+            onClick={(a) => distributeSelected(a, distMode)}
+            title={distMode === 'spacing' ? 'Equal horizontal gaps' : 'Distribute centers horizontally'}
+          >
+            {distMode === 'spacing' ? <AlignHorizontalSpaceAround size={14} /> : <AlignHorizontalDistributeCenter size={14} />}
             <span>Horizontal</span>
           </DistBtn>
-          <DistBtn axis="vertical" disabled={!canDistribute} onClick={distributeSelected} title="Distribute vertically">
-            <AlignVerticalDistributeCenter size={14} />
+          <DistBtn
+            axis="vertical"
+            disabled={!canDistribute}
+            onClick={(a) => distributeSelected(a, distMode)}
+            title={distMode === 'spacing' ? 'Equal vertical gaps' : 'Distribute centers vertically'}
+          >
+            {distMode === 'spacing' ? <AlignVerticalSpaceAround size={14} /> : <AlignVerticalDistributeCenter size={14} />}
             <span>Vertical</span>
           </DistBtn>
         </div>
@@ -84,6 +127,13 @@ export default function AlignmentToolbar() {
       <div className="pt-3 border-t border-gray-100 space-y-1.5">
         <div className="grid grid-cols-2 gap-1.5">
           <button
+            onClick={someGrouped ? ungroupSelected : groupSelected}
+            disabled={!someGrouped && selectedElementIds.length < 2}
+            className="h-8 flex items-center justify-center gap-1.5 text-xs font-medium border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {someGrouped ? <><Ungroup size={13} /> Ungroup</> : <><Group size={13} /> Group</>}
+          </button>
+          <button
             onClick={duplicateSelected}
             className="h-8 flex items-center justify-center gap-1.5 text-xs font-medium border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
           >
@@ -91,7 +141,7 @@ export default function AlignmentToolbar() {
           </button>
           <button
             onClick={lockAll}
-            className="h-8 flex items-center justify-center gap-1.5 text-xs font-medium border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+            className="h-8 col-span-2 flex items-center justify-center gap-1.5 text-xs font-medium border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
           >
             <Lock size={13} /> Lock all
           </button>

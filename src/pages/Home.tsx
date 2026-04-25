@@ -21,8 +21,8 @@ export default function Home() {
       <header className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-gray-200/70">
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <img src="/logo.svg" alt="Canvas Studio" width={32} height={32} className="rounded-lg shadow-sm" />
-            <span className="font-semibold text-gray-900 tracking-tight">Canvas Studio</span>
+            <img src="/logo.svg" alt="Imprintly" width={32} height={32} className="rounded-lg shadow-sm" />
+            <span className="font-semibold text-gray-900 tracking-tight">Imprintly</span>
           </div>
 
           <div className="flex-1 max-w-md relative">

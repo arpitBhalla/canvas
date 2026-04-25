@@ -1,9 +1,10 @@
-import { Settings2, Type, Square, Image as ImageIcon, Layers, PenTool } from 'lucide-react'
+import { Settings2, Type, Square, Image as ImageIcon, Layers, PenTool, QrCode } from 'lucide-react'
 import { useEditorStore } from '../../store/editorStore'
 import TextProperties from '../properties/TextProperties'
 import ShapeProperties from '../properties/ShapeProperties'
 import ImageProperties from '../properties/ImageProperties'
 import PathProperties from '../properties/PathProperties'
+import QrProperties from '../properties/QrProperties'
 import ElementActions from '../properties/ElementActions'
 import CanvasProperties from '../properties/CanvasProperties'
 import VisibilityField from '../properties/VisibilityField'
@@ -15,6 +16,7 @@ const ICONS = {
   shape: Square,
   image: ImageIcon,
   path: PenTool,
+  qr: QrCode,
 } as const
 
 export default function RightSidebar() {
@@ -46,6 +48,7 @@ export default function RightSidebar() {
           {element.type === 'shape' && <ShapeProperties element={element} />}
           {element.type === 'image' && <ImageProperties element={element} />}
           {element.type === 'path' && <PathProperties element={element} />}
+          {element.type === 'qr' && <QrProperties element={element} />}
           {element.type !== 'path' && (
             <div className="pt-3 border-t border-gray-100">
               <ShadowField element={element} />

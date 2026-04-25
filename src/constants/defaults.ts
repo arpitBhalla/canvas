@@ -1,8 +1,9 @@
-import type { TextElement, ShapeElement, ImageElement } from '../types'
+import type { TextElement, ShapeElement, ImageElement, QrElement } from '../types'
 
 type DefaultText = Omit<TextElement, 'id' | 'zIndex'>
 type DefaultShape = Omit<ShapeElement, 'id' | 'zIndex'>
 type DefaultImage = Omit<ImageElement, 'id' | 'zIndex'>
+type DefaultQr = Omit<QrElement, 'id' | 'zIndex'>
 
 export const DEFAULT_TEXT: DefaultText = {
   type: 'text',
@@ -48,6 +49,20 @@ export const DEFAULT_IMAGE: DefaultImage = {
   src: '',
   objectFit: 'cover',
   borderRadius: 0,
+}
+
+export const DEFAULT_QR: DefaultQr = {
+  type: 'qr',
+  position: { x: 50, y: 50 },
+  size: { width: 180, height: 180 },
+  rotation: 0,
+  locked: false,
+  opacity: 1,
+  value: 'https://example.com',
+  level: 'M',
+  foreground: '#111827',
+  background: '#ffffff',
+  margin: 1,
 }
 
 export const CANVAS_WIDTH = 1200

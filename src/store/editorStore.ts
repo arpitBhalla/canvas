@@ -1,11 +1,12 @@
 import { create } from 'zustand'
 import { temporal } from 'zundo'
-import type { CanvasElement, TextElement, ShapeElement, ImageElement, PathElement, PathMode, Position, Size, DataSource, Template } from '../types'
-import { DEFAULT_TEXT, DEFAULT_SHAPE, DEFAULT_IMAGE, CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/defaults'
+import type { CanvasElement, TextElement, ShapeElement, ImageElement, PathElement, QrElement, PathMode, Position, Size, DataSource, Template } from '../types'
+import { DEFAULT_TEXT, DEFAULT_SHAPE, DEFAULT_IMAGE, DEFAULT_QR, CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/defaults'
 import { createId } from '../utils/ids'
 
 export type AlignAxis = 'left' | 'center-h' | 'right' | 'top' | 'center-v' | 'bottom'
 export type DistributeAxis = 'horizontal' | 'vertical'
+export type DistributeMode = 'center' | 'spacing'
 
 export interface SnapGuide {
   axis: 'x' | 'y'
@@ -28,7 +29,7 @@ interface EditorState {
   addBrandColor: (color: string) => void
   removeBrandColor: (color: string) => void
 
-  addElement: (type: 'text' | 'shape' | 'image', extra?: Partial<CanvasElement>) => void
+  addElement: (type: 'text' | 'shape' | 'image' | 'qr', extra?: Partial<CanvasElement>) => void
   updateElement: (id: string, updates: Partial<CanvasElement>) => void
   deleteElement: (id: string) => void
   deleteSelected: () => void
@@ -48,7 +49,9 @@ interface EditorState {
   setElementZOrder: (orderedIds: string[]) => void
 
   alignSelected: (axis: AlignAxis) => void
-  distributeSelected: (axis: DistributeAxis) => void
+  distributeSelected: (axis: DistributeAxis, mode?: DistributeMode) => void
+  groupSelected: () => void
+  ungroupSelected: () => void
 
   setDataSource: (data: DataSource) => void
   clearDataSource: () => void
@@ -170,6 +173,8 @@ export const useEditorStore = create<EditorState>()(
           el = { ...DEFAULT_TEXT, id, zIndex, ...extra } as TextElement
         } else if (type === 'shape') {
           el = { ...DEFAULT_SHAPE, id, zIndex, ...extra } as ShapeElement
+        } else if (type === 'qr') {
+          el = { ...DEFAULT_QR, id, zIndex, ...extra } as QrElement
         } else {
           el = { ...DEFAULT_IMAGE, id, zIndex, ...extra } as ImageElement
         }
@@ -397,7 +402,7 @@ export const useEditorStore = create<EditorState>()(
         })
       },
 
-      distributeSelected: (axis) => {
+      distributeSelected: (axis, mode = 'center') => {
         const { template, selectedElementIds } = get()
         if (selectedElementIds.length < 3) return
         const sel = template.elements.filter((e) => selectedElementIds.includes(e.id) && !e.locked)
@@ -409,34 +414,96 @@ export const useEditorStore = create<EditorState>()(
             : a.position.y + a.size.height / 2 - (b.position.y + b.size.height / 2)
         )
 
-        const first = sorted[0]!
-        const last = sorted[sorted.length - 1]!
-        const firstCenter =
-          axis === 'horizontal'
-            ? first.position.x + first.size.width / 2
-            : first.position.y + first.size.height / 2
-        const lastCenter =
-          axis === 'horizontal'
-            ? last.position.x + last.size.width / 2
-            : last.position.y + last.size.height / 2
-        const step = (lastCenter - firstCenter) / (sorted.length - 1)
-
         const moves: Record<string, Position> = {}
-        sorted.forEach((el, i) => {
-          if (i === 0 || i === sorted.length - 1) return
-          const targetCenter = firstCenter + step * i
-          if (axis === 'horizontal') {
-            moves[el.id] = { x: Math.round(targetCenter - el.size.width / 2), y: el.position.y }
-          } else {
-            moves[el.id] = { x: el.position.x, y: Math.round(targetCenter - el.size.height / 2) }
+
+        if (mode === 'spacing') {
+          const totalSize = sorted.reduce(
+            (sum, el) => sum + (axis === 'horizontal' ? el.size.width : el.size.height),
+            0
+          )
+          const first = sorted[0]!
+          const last = sorted[sorted.length - 1]!
+          const startEdge = axis === 'horizontal' ? first.position.x : first.position.y
+          const endEdge =
+            axis === 'horizontal'
+              ? last.position.x + last.size.width
+              : last.position.y + last.size.height
+          const totalSpan = endEdge - startEdge
+          const gap = (totalSpan - totalSize) / (sorted.length - 1)
+
+          let cursor = startEdge
+          for (let i = 0; i < sorted.length; i++) {
+            const el = sorted[i]!
+            if (i > 0) {
+              if (axis === 'horizontal') moves[el.id] = { x: Math.round(cursor), y: el.position.y }
+              else moves[el.id] = { x: el.position.x, y: Math.round(cursor) }
+            }
+            cursor += (axis === 'horizontal' ? el.size.width : el.size.height) + gap
           }
-        })
+        } else {
+          const first = sorted[0]!
+          const last = sorted[sorted.length - 1]!
+          const firstCenter =
+            axis === 'horizontal'
+              ? first.position.x + first.size.width / 2
+              : first.position.y + first.size.height / 2
+          const lastCenter =
+            axis === 'horizontal'
+              ? last.position.x + last.size.width / 2
+              : last.position.y + last.size.height / 2
+          const step = (lastCenter - firstCenter) / (sorted.length - 1)
+
+          sorted.forEach((el, i) => {
+            if (i === 0 || i === sorted.length - 1) return
+            const targetCenter = firstCenter + step * i
+            if (axis === 'horizontal') {
+              moves[el.id] = { x: Math.round(targetCenter - el.size.width / 2), y: el.position.y }
+            } else {
+              moves[el.id] = { x: el.position.x, y: Math.round(targetCenter - el.size.height / 2) }
+            }
+          })
+        }
 
         set({
           template: {
             ...template,
             elements: template.elements.map((el) =>
               moves[el.id] ? ({ ...el, position: moves[el.id]! } as CanvasElement) : el
+            ),
+          },
+        })
+      },
+
+      groupSelected: () => {
+        const { template, selectedElementIds } = get()
+        if (selectedElementIds.length < 2) return
+        const groupId = createId()
+        set({
+          template: {
+            ...template,
+            elements: template.elements.map((el) =>
+              selectedElementIds.includes(el.id) ? ({ ...el, groupId } as CanvasElement) : el
+            ),
+          },
+        })
+      },
+
+      ungroupSelected: () => {
+        const { template, selectedElementIds } = get()
+        if (selectedElementIds.length === 0) return
+        const groupIds = new Set<string>()
+        for (const id of selectedElementIds) {
+          const el = template.elements.find((x) => x.id === id)
+          if (el?.groupId) groupIds.add(el.groupId)
+        }
+        if (groupIds.size === 0) return
+        set({
+          template: {
+            ...template,
+            elements: template.elements.map((el) =>
+              el.groupId && groupIds.has(el.groupId)
+                ? ({ ...el, groupId: undefined } as CanvasElement)
+                : el
             ),
           },
         })

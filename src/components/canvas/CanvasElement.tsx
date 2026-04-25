@@ -7,6 +7,7 @@ import TextElement from './TextElement'
 import ShapeElement from './ShapeElement'
 import ImageElement from './ImageElement'
 import PathElement from './PathElement'
+import QrElement from './QrElement'
 
 interface Props {
   element: CanvasElementType
@@ -86,8 +87,6 @@ function computeSnap(
 export default function CanvasElement({ element }: Props) {
   const selectedElementIds = useEditorStore((s) => s.selectedElementIds)
   const editingTextId = useEditorStore((s) => s.editingTextId)
-  const selectElement = useEditorStore((s) => s.selectElement)
-  const toggleSelectElement = useEditorStore((s) => s.toggleSelectElement)
   const moveElement = useEditorStore((s) => s.moveElement)
   const resizeElement = useEditorStore((s) => s.resizeElement)
   const setSnapGuides = useEditorStore((s) => s.setSnapGuides)
@@ -110,6 +109,8 @@ export default function CanvasElement({ element }: Props) {
         return <ImageElement element={element} />
       case 'path':
         return <PathElement element={element} />
+      case 'qr':
+        return <QrElement element={element} />
     }
   }
 
@@ -204,14 +205,23 @@ export default function CanvasElement({ element }: Props) {
         )
       }}
       bounds="parent"
+      data-rnd-element-id={element.id}
       disableDragging={element.locked || isEditingThis}
       enableResizing={!element.locked && isPrimarySelected}
       onMouseDown={(e: MouseEvent) => {
         e.stopPropagation()
+        const { template, selectMany } = useEditorStore.getState()
+        const peers = element.groupId
+          ? template.elements.filter((x) => x.groupId === element.groupId).map((x) => x.id)
+          : [element.id]
         if (e.shiftKey) {
-          toggleSelectElement(element.id)
-        } else if (!isSelected) {
-          selectElement(element.id)
+          if (peers.length > 1 && peers.every((id) => selectedElementIds.includes(id))) {
+            selectMany(selectedElementIds.filter((id) => !peers.includes(id)))
+          } else {
+            selectMany([...new Set([...selectedElementIds, ...peers])])
+          }
+        } else if (!peers.every((id) => selectedElementIds.includes(id))) {
+          selectMany(peers)
         }
       }}
       style={{
@@ -220,9 +230,74 @@ export default function CanvasElement({ element }: Props) {
         outline,
         outlineOffset: '1px',
         cursor: isEditingThis ? 'text' : element.locked ? 'default' : 'move',
+        transform: element.rotation ? `rotate(${element.rotation}deg)` : undefined,
       }}
     >
       {renderElement()}
+      {isPrimarySelected && !element.locked && !isEditingThis && (
+        <RotationHandle elementId={element.id} />
+      )}
     </Rnd>
+  )
+}
+
+function RotationHandle({ elementId }: { elementId: string }) {
+  return (
+    <div
+      onMouseDown={(e) => {
+        e.stopPropagation()
+        e.preventDefault()
+        const handle = e.currentTarget as HTMLElement
+        const wrapper = handle.parentElement as HTMLElement | null
+        if (!wrapper) return
+        const rect = wrapper.getBoundingClientRect()
+        const cx = rect.left + rect.width / 2
+        const cy = rect.top + rect.height / 2
+
+        useEditorStore.temporal.getState().pause()
+
+        function onMove(ev: MouseEvent) {
+          let angle = (Math.atan2(ev.clientY - cy, ev.clientX - cx) * 180) / Math.PI + 90
+          if (ev.shiftKey) angle = Math.round(angle / 15) * 15
+          angle = ((angle % 360) + 360) % 360
+          useEditorStore.getState().updateElement(elementId, { rotation: angle })
+        }
+        function onUp() {
+          window.removeEventListener('mousemove', onMove)
+          window.removeEventListener('mouseup', onUp)
+          useEditorStore.temporal.getState().resume()
+        }
+        window.addEventListener('mousemove', onMove)
+        window.addEventListener('mouseup', onUp)
+      }}
+      style={{
+        position: 'absolute',
+        top: -28,
+        left: '50%',
+        width: 14,
+        height: 14,
+        marginLeft: -7,
+        borderRadius: 9999,
+        background: 'white',
+        border: '2px solid #7c3aed',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+        cursor: 'grab',
+        zIndex: 10,
+      }}
+      title="Rotate (hold Shift to snap to 15°)"
+    >
+      <div
+        style={{
+          position: 'absolute',
+          left: '50%',
+          top: 8,
+          width: 1,
+          height: 14,
+          background: '#7c3aed',
+          marginLeft: -0.5,
+          pointerEvents: 'none',
+        }}
+      />
+    </div>
   )
 }

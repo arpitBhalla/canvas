@@ -3,8 +3,9 @@ import { useEditorStore } from '../../store/editorStore'
 import { useCanvasDropZone } from '../../hooks/useCanvasDropZone'
 import CanvasElement from './CanvasElement'
 import SnapGuides from './SnapGuides'
+import ContextMenu from './ContextMenu'
 import { pointsToD, simplifyFreehand } from '../../utils/path'
-import type { Position } from '../../types'
+import type { CanvasElement as CanvasElementType, Position } from '../../types'
 
 interface MarqueeRect {
   x: number
@@ -18,6 +19,7 @@ export default function Canvas() {
   const zoom = useEditorStore((s) => s.zoom)
   const clearSelection = useEditorStore((s) => s.clearSelection)
   const selectMany = useEditorStore((s) => s.selectMany)
+  const selectElement = useEditorStore((s) => s.selectElement)
   const drawingMode = useEditorStore((s) => s.drawingMode)
   const setDrawingMode = useEditorStore((s) => s.setDrawingMode)
   const addPathFromCanvas = useEditorStore((s) => s.addPathFromCanvas)
@@ -27,6 +29,7 @@ export default function Canvas() {
   const [marquee, setMarquee] = useState<MarqueeRect | null>(null)
   const [drawPoints, setDrawPoints] = useState<Position[]>([])
   const [hoverPoint, setHoverPoint] = useState<Position | null>(null)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; element: CanvasElementType | null } | null>(null)
 
   const sorted = [...template.elements].sort((a, b) => a.zIndex - b.zIndex)
 
@@ -168,6 +171,28 @@ export default function Canvas() {
     if (p) setHoverPoint(p)
   }
 
+  function handleContextMenu(e: React.MouseEvent) {
+    const target = e.target as HTMLElement
+    let elId: string | null = null
+    let cur: HTMLElement | null = target
+    while (cur && cur !== stageRef.current) {
+      if (cur.dataset?.elementId) {
+        elId = cur.dataset.elementId
+        break
+      }
+      cur = cur.parentElement
+    }
+    if (!elId) {
+      const rndAncestor = target.closest('[data-rnd-element-id]') as HTMLElement | null
+      if (rndAncestor) elId = rndAncestor.dataset.rndElementId ?? null
+    }
+    const el = elId ? template.elements.find((x) => x.id === elId) ?? null : null
+    if (!el) return
+    e.preventDefault()
+    selectElement(el.id)
+    setContextMenu({ x: e.clientX, y: e.clientY, element: el })
+  }
+
   const previewPoints =
     drawingMode && drawingMode !== 'freehand' && hoverPoint && drawPoints.length > 0
       ? [...drawPoints, hoverPoint]
@@ -193,6 +218,7 @@ export default function Canvas() {
           className="relative rounded-sm"
           onMouseDown={handleStageMouseDown}
           onMouseMove={handleStageMouseMove}
+          onContextMenu={handleContextMenu}
           style={{
             width: template.canvasWidth,
             height: template.canvasHeight,
@@ -246,6 +272,14 @@ export default function Canvas() {
             Drop image to add
           </div>
         </div>
+      )}
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          element={contextMenu.element}
+          onClose={() => setContextMenu(null)}
+        />
       )}
       {drawingMode && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-2">

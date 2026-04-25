@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Template, TextElement, ShapeElement, ImageElement, PathElement } from '../../types'
+import type { Template, TextElement, ShapeElement, ImageElement, PathElement, QrElement } from '../../types'
 import { shapeFillCss } from '../../utils/style'
 import { pointsToD } from '../../utils/path'
+import QrElementRenderer from '../canvas/QrElement'
 
 interface Props {
   template: Template
@@ -54,6 +55,7 @@ export default function TemplatePreview({ template, className = '' }: Props) {
             width: el.size.width,
             height: el.size.height,
             opacity: el.opacity,
+            transform: el.rotation ? `rotate(${el.rotation}deg)` : undefined,
           }
 
           if (el.type === 'text') {
@@ -135,6 +137,14 @@ export default function TemplatePreview({ template, className = '' }: Props) {
                   boxSizing: 'border-box',
                 }}
               />
+            )
+          }
+          if (el.type === 'qr') {
+            const q = el as QrElement
+            return (
+              <div key={el.id} style={baseStyle}>
+                <QrElementRenderer element={q} />
+              </div>
             )
           }
           if (el.type === 'path') {

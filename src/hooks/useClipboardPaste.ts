@@ -63,7 +63,13 @@ export function useClipboardPaste() {
             0,
             Math.min(template.canvasHeight - height, (template.canvasHeight - height) / 2 + offset)
           )
-          addElement('image', { src, size: { width, height }, position: { x, y } })
+          addElement('image', {
+            src,
+            size: { width, height },
+            position: { x, y },
+            naturalWidth: dim.width,
+            naturalHeight: dim.height,
+          })
           offset += 20
         } catch {
           // skip
